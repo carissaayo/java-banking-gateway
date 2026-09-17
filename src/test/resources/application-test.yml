@@ -1,0 +1,4 @@
+gateway:
+  upstreams:
+    ledger: http://127.0.0.1:65535
+    customer: http://127.0.0.1:65534
