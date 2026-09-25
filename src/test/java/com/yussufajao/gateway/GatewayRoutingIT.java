@@ -1,9 +1,11 @@
 package com.yussufajao.gateway;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -135,19 +137,96 @@ class GatewayRoutingIT {
 	}
 
 	@Test
-	void unknownRouteFailsWithNotFound() {
+	void unknownRouteFailsWithProblemDetails() {
 		webTestClient.get()
-				.uri("/api/unknown/resource")
+				.uri("/api/unknown/resource?token=secret")
 				.exchange()
-				.expectStatus().isNotFound();
+				.expectStatus().isNotFound()
+				.expectHeader().exists(GatewayHeaders.CORRELATION_ID)
+				.expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.expectBody()
+				.jsonPath("$.type").isEqualTo("https://errors.example.test/route-not-found")
+				.jsonPath("$.title").isEqualTo("Route not found")
+				.jsonPath("$.status").isEqualTo(404)
+				.jsonPath("$.instance").isEqualTo("/api/unknown/resource")
+				.jsonPath("$.correlationId").exists()
+				.jsonPath("$.detail").value(detail -> assertThat((String) detail)
+						.doesNotContain("Exception")
+						.doesNotContain("trace"))
+				.jsonPath("$.exception").doesNotExist()
+				.jsonPath("$.trace").doesNotExist();
 	}
 
 	@Test
-	void disallowedMethodFailsWithNotFound() {
+	void disallowedMethodFailsWithProblemDetails() {
 		webTestClient.delete()
 				.uri("/api/ledger/accounts/acc-1")
 				.exchange()
-				.expectStatus().isNotFound();
+				.expectStatus().isNotFound()
+				.expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.expectBody()
+				.jsonPath("$.type").isEqualTo("https://errors.example.test/route-not-found")
+				.jsonPath("$.status").isEqualTo(404);
+	}
+
+	@Test
+	void acceptsValidCorrelationAndTraceHeaders() {
+		webTestClient.get()
+				.uri("/api/ledger/accounts/acc-1")
+				.header(GatewayHeaders.CORRELATION_ID, "corr-1234")
+				.header(GatewayHeaders.TRACEPARENT, "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01")
+				.header(GatewayHeaders.TRACESTATE, "vendor=one")
+				.exchange()
+				.expectStatus().isOk()
+				.expectHeader().valueEquals(GatewayHeaders.CORRELATION_ID, "corr-1234");
+
+		ledger.verify(getRequestedFor(urlEqualTo("/accounts/acc-1"))
+				.withHeader(GatewayHeaders.CORRELATION_ID, equalTo("corr-1234"))
+				.withHeader(GatewayHeaders.TRACEPARENT,
+						matching("00-0af7651916cd43dd8448eb211c80319c-[0-9a-f]{16}-01"))
+				.withHeader(GatewayHeaders.TRACESTATE, equalTo("vendor=one")));
+	}
+
+	@Test
+	void replacesUnsafeCorrelationAndTraceHeaders() {
+		webTestClient.get()
+				.uri("/api/ledger/accounts/acc-1")
+				.header(GatewayHeaders.CORRELATION_ID, "abc\nInjected")
+				.header(GatewayHeaders.TRACEPARENT, "not-a-trace")
+				.header(GatewayHeaders.TRACESTATE, "bad\nstate")
+				.exchange()
+				.expectStatus().isOk()
+				.expectHeader().value(GatewayHeaders.CORRELATION_ID,
+						value -> assertThat(value).isNotEqualTo("abc\nInjected").hasSize(36));
+
+		ledger.verify(getRequestedFor(urlEqualTo("/accounts/acc-1"))
+				.withHeader(GatewayHeaders.CORRELATION_ID, matching(
+						"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"))
+				.withHeader(GatewayHeaders.TRACEPARENT, matching("00-[0-9a-f]{32}-[0-9a-f]{16}-01"))
+				.withHeader(GatewayHeaders.TRACESTATE, absent()));
+	}
+
+	@Test
+	void sanitizesUpstreamServerErrors() {
+		ledger.stubFor(get(urlEqualTo("/accounts/boom"))
+				.willReturn(json(500,
+						"{\"error\":\"java.lang.NullPointerException at LedgerService.java:42 host=ledger-1.internal\"}")));
+
+		webTestClient.get()
+				.uri("/api/ledger/accounts/boom")
+				.header(GatewayHeaders.CORRELATION_ID, "corr-safe-1")
+				.exchange()
+				.expectStatus().isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+				.expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.expectHeader().valueEquals(GatewayHeaders.CORRELATION_ID, "corr-safe-1")
+				.expectBody()
+				.jsonPath("$.type").isEqualTo("https://errors.example.test/upstream-error")
+				.jsonPath("$.status").isEqualTo(500)
+				.jsonPath("$.correlationId").isEqualTo("corr-safe-1")
+				.jsonPath("$.detail").value(detail -> assertThat((String) detail)
+						.doesNotContain("NullPointerException")
+						.doesNotContain("ledger-1.internal")
+						.doesNotContain("Exception"));
 	}
 
 	@Test
