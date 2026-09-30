@@ -11,7 +11,12 @@ public enum GatewayErrorCode {
 	UPSTREAM_ERROR("upstream-error", "Upstream error", 500,
 			"The upstream service failed to handle the request."),
 	INTERNAL_ERROR("internal-error", "Internal error", 500,
-			"The gateway could not complete the request.");
+			"The gateway could not complete the request."),
+	INSUFFICIENT_SCOPE("insufficient-scope","Insufficient scope", 403,
+            "The authenticated client does not have the required scope."),
+	INVALID_CREDENTIALS( "invalid-credentials", "Invalid credentials", 401,
+            "The request does not contain valid credentials."
+    );
 
 	private static final String TYPE_BASE = "https://errors.example.test/";
 
