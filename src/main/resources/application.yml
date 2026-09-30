@@ -10,7 +10,17 @@ spring:
           discovery:
             locator:
               enabled: false
+    security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER}   
 
+security:
+  jwt:
+    issuer: ${JWT_ISSUER}
+    audience: ${JWT_AUDIENCE}
+    
 server:
   port: 8080
   error:
