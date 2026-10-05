@@ -10,16 +10,16 @@ spring:
           discovery:
             locator:
               enabled: false
-    security:
+  security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${JWT_ISSUER}   
+          issuer-uri: ${gateway.security.issuer-uri}  
 
-security:
-  jwt:
-    issuer: ${JWT_ISSUER}
-    audience: ${JWT_AUDIENCE}
+gateway:
+  security:
+    issuer: ${GATEWAY_SECURITY_ISSUER_URI}
+    audience: ${GATEWAY_SECURITY_AUDIENCE}
     
 server:
   port: 8080

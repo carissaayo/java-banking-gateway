@@ -83,4 +83,8 @@ public class GatewayProblemMapper {
 		}
 		return Exceptions.unwrap(error);
 	}
+
+	public GatewayProblem of(GatewayErrorCode code, String instance, String correlationId) {
+	return GatewayProblem.of(code, code.defaultStatus(), instance, correlationId);
+}
 }
