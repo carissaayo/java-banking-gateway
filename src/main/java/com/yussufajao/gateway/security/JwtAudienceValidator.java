@@ -1,4 +1,4 @@
-public package com.yussufajao.gateway.security;
+package com.yussufajao.gateway.security;
 
 import java.util.List;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -24,6 +24,4 @@ public final class JwtAudienceValidator implements OAuth2TokenValidator<Jwt> {
 		return OAuth2TokenValidatorResult.failure(
 				new OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN, "The token audience is not valid.", null));
 	}
-} {
-    
 }
