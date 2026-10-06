@@ -1,4 +1,4 @@
-public package com.yussufajao.gateway.security;
+package com.yussufajao.gateway.security;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
