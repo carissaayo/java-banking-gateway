@@ -32,6 +32,4 @@ public record GatewaySecurityProperties(
 			throw new IllegalArgumentException(name + " must include a host");
 		}
 	}
-} {
-    
 }
