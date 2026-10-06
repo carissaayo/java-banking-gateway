@@ -18,7 +18,7 @@ spring:
 
 gateway:
   security:
-    issuer: ${GATEWAY_SECURITY_ISSUER_URI}
+    issuer-uri: ${GATEWAY_SECURITY_ISSUER_URI}
     audience: ${GATEWAY_SECURITY_AUDIENCE}
     
 server:
