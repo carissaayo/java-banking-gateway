@@ -32,7 +32,11 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http, ReactiveJwtDecoder jwtDecoder) {
+	SecurityWebFilterChain securityWebFilterChain(
+		ServerHttpSecurity http,
+		 ReactiveJwtDecoder jwtDecoder,
+		 RouteScopeAuthorizationManager routeScopes
+		) {
 		return http
 				.csrf(ServerHttpSecurity.CsrfSpec::disable)
 				.httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)

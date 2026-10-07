@@ -3,7 +3,7 @@ package com.yussufajao.gateway.security;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.springframework.http.Httpmethod;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.server.PathContainer;
 import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
@@ -41,7 +41,7 @@ public class RouteScopeCatalog {
     }
 
     private record Rule(Set<HttpMethod> methods, PathPattern pattern, String scope){
-        
+
     }
 
 }

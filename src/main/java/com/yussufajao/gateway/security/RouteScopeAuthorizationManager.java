@@ -21,7 +21,7 @@ public class RouteScopeAuthorizationManager  implements ReactiveAuthorizationMan
     @Override
     public Mono<AuthorizationResult> authorize(
         Mono<Authentication> authentication,
-        AuthorizationContet context
+        AuthorizationContext context
     ){
         HttpMethod method = context.getExchange().getRequest().getMethod();
         String path = context.getExchange().getRequest().getURI().getRawPath();
