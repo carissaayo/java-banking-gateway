@@ -9,11 +9,14 @@ import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -25,10 +28,19 @@ public class AccessLogWebFilter implements WebFilter {
 	public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 		long started = System.nanoTime();
 		return chain.filter(exchange)
-				.doFinally(signal -> write(exchange, started));
+				.doOnEach(signal -> {
+					if (signal.getType() == SignalType.ON_COMPLETE || signal.getType() == SignalType.ON_ERROR) {
+						Authentication authentication = null;
+						Object stored = signal.getContextView().getOrDefault(SecurityContext.class, null);
+						if (stored instanceof SecurityContext securityContext) {
+							authentication = securityContext.getAuthentication();
+						}
+						write(exchange, started, authentication);
+					}
+				});
 	}
 
-	private static void write(ServerWebExchange exchange, long startedNanos) {
+	private static void write(ServerWebExchange exchange, long startedNanos, Authentication authentication) {
 		HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
 		int status = statusCode != null ? statusCode.value() : 0;
 		long durationMs = (System.nanoTime() - startedNanos) / 1_000_000L;
@@ -47,6 +59,8 @@ public class AccessLogWebFilter implements WebFilter {
 		MDC.put("httpStatus", Integer.toString(status));
 		MDC.put("durationMs", Long.toString(durationMs));
 		MDC.put("upstreamOutcome", outcome);
+		MDC.put("clientId", AuthenticatedClient.clientId(authentication));
+		MDC.put("subject", AuthenticatedClient.subject(authentication));
 		try {
 			ACCESS.info("access");
 		}
