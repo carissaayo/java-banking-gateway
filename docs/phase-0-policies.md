@@ -108,7 +108,7 @@ Path rewriting strips the public `/api/...` prefix so upstreams keep a stable in
 | Public path | `/api/customers/**` |
 | Upstream | Customer service. Rewritten to `/customers/**` |
 | Methods | `GET`, `HEAD`, `POST`, `PATCH` |
-| Scopes | Reads: customer-read scope owned by the customer API (to be named with the customer service). Writes: matching write scope. Operations users do not use this route for privileged admin work. |
+| Scopes | `GET`/`HEAD`: `customers.read`. `POST`/`PATCH`: `customers.write`. Operations users do not use this route for privileged admin work. |
 | Timeout | Moderate. |
 | Rate limit | Customer-read: moderate + burst. Writes: lower than reads. |
 | Redis failure | Fail closed for writes. Fail-open may be acceptable for reads. |

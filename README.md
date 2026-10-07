@@ -227,6 +227,8 @@ ledger.transfers.read
 ledger.transfers.write
 ledger.reversals.write
 transactions.read
+customers.read
+customers.write
 operations.read
 operations.admin
 ```

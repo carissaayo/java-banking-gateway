@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed for Phase 3. Accept when you implement it.
+Accepted. Implemented as a WebFlux JWT resource server with `RouteScopeAuthorizationManager` (method+path table, not one scope per RouteLocator id).
 
 ## Context
 
