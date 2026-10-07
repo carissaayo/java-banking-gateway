@@ -15,7 +15,7 @@ public record RateLimitPolicy(
             throw new IllegalStateException("replenishRate must be at least 1");
         }
         if(burstCapacity < replenishRate){
-            throw new IllegalStateException("burstCapacity must be >= replenishRate")
+            throw new IllegalStateException("burstCapacity must be >= replenishRate");
         }
     }
 }
