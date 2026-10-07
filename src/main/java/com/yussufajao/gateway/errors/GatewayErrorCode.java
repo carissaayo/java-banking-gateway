@@ -16,7 +16,10 @@ public enum GatewayErrorCode {
             "The authenticated client does not have the required scope."),
 	INVALID_CREDENTIALS( "invalid-credentials", "Invalid credentials", 401,
             "The request does not contain valid credentials."
-    );
+    ),
+	RATE_LIMIT_EXCEEDED("rate-limit-exceeded", "Rate limit exceeded", 429,
+		"The request quota for this route has been exceeded.");
+	
 
 	private static final String TYPE_BASE = "https://errors.example.test/";
 
