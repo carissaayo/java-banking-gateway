@@ -24,9 +24,7 @@ public class SecurityConfig {
 
 	public SecurityConfig(
 			GatewayAuthenticationFailureHandler authenticationFailureHandler,
-			GatewayAccessDeniedHandler accessDeniedHandler,
-			RouteScopeAuthorizationManager routeScopes
-		) {
+			GatewayAccessDeniedHandler accessDeniedHandler) {
 		this.authenticationFailureHandler = authenticationFailureHandler;
 		this.accessDeniedHandler = accessDeniedHandler;
 	}
@@ -51,7 +49,7 @@ public class SecurityConfig {
 						.pathMatchers("/api/**").access(routeScopes)
 						.anyExchange().authenticated())
 				.oauth2ResourceServer(oauth2 -> oauth2
-						.jwt(jwt -> jwt.decoder(jwtDecoder))
+						.jwt(jwt -> jwt.jwtDecoder(jwtDecoder))
 						.authenticationEntryPoint(authenticationFailureHandler))
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint(authenticationFailureHandler)

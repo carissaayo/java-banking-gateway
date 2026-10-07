@@ -2,3 +2,6 @@ gateway:
   upstreams:
     ledger: http://127.0.0.1:65535
     customer: http://127.0.0.1:65534
+  security:
+    issuer-uri: http://127.0.0.1:8180/realms/banking
+    audience: banking-gateway

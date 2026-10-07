@@ -16,20 +16,40 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.yussufajao.gateway.routing.GatewayHeaders;
 import com.yussufajao.gateway.routing.StaticRouteCatalogConfiguration;
+import com.yussufajao.gateway.security.TestJwtConfiguration;
+import com.yussufajao.gateway.security.TestJwtTokens;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebTestClient
+@ActiveProfiles("test")
+@Import(TestJwtConfiguration.class)
 class GatewayRoutingIT {
+
+	private static final String AUTH = TestJwtTokens.bearer(
+			"ledger.accounts.read",
+			"ledger.accounts.write",
+			"ledger.transfers.read",
+			"ledger.transfers.write",
+			"transactions.read",
+			"customers.read",
+			"customers.write",
+			"operations.read",
+			"operations.admin");
 
 	@RegisterExtension
 	static final WireMockExtension ledger = WireMockExtension.newInstance()
@@ -71,6 +91,7 @@ class GatewayRoutingIT {
 	void ledgerReadIsRewrittenAndRouted() {
 		webTestClient.get()
 				.uri("/api/ledger/accounts/acc-1")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.exchange()
 				.expectStatus().isOk()
 				.expectHeader().valueEquals(GatewayHeaders.ROUTE_ID, StaticRouteCatalogConfiguration.LEDGER_WRITE)
@@ -85,6 +106,7 @@ class GatewayRoutingIT {
 		webTestClient.post()
 				.uri("/api/ledger/transfers")
 				.contentType(MediaType.APPLICATION_JSON)
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.header("Idempotency-Key", "idem-123")
 				.bodyValue("{\"amountMinor\":100}")
 				.exchange()
@@ -101,6 +123,7 @@ class GatewayRoutingIT {
 	void transactionQueryIsRewrittenAndRouted() {
 		webTestClient.get()
 				.uri("/api/transactions/txn-1")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.exchange()
 				.expectStatus().isOk()
 				.expectHeader().valueEquals(GatewayHeaders.ROUTE_ID, StaticRouteCatalogConfiguration.TRANSACTION_QUERY)
@@ -114,6 +137,7 @@ class GatewayRoutingIT {
 	void customerReadIsRewrittenAndRouted() {
 		webTestClient.get()
 				.uri("/api/customers/cus-1")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.exchange()
 				.expectStatus().isOk()
 				.expectHeader().valueEquals(GatewayHeaders.ROUTE_ID, StaticRouteCatalogConfiguration.CUSTOMER)
@@ -127,6 +151,7 @@ class GatewayRoutingIT {
 	void operationsReadIsRewrittenAndRouted() {
 		webTestClient.get()
 				.uri("/api/operations/status")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.exchange()
 				.expectStatus().isOk()
 				.expectHeader().valueEquals(GatewayHeaders.ROUTE_ID, StaticRouteCatalogConfiguration.OPERATIONS)
@@ -140,6 +165,7 @@ class GatewayRoutingIT {
 	void unknownRouteFailsWithProblemDetails() {
 		webTestClient.get()
 				.uri("/api/unknown/resource?token=secret")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.exchange()
 				.expectStatus().isNotFound()
 				.expectHeader().exists(GatewayHeaders.CORRELATION_ID)
@@ -161,6 +187,7 @@ class GatewayRoutingIT {
 	void disallowedMethodFailsWithProblemDetails() {
 		webTestClient.delete()
 				.uri("/api/ledger/accounts/acc-1")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.exchange()
 				.expectStatus().isNotFound()
 				.expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -173,6 +200,7 @@ class GatewayRoutingIT {
 	void acceptsValidCorrelationAndTraceHeaders() {
 		webTestClient.get()
 				.uri("/api/ledger/accounts/acc-1")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.header(GatewayHeaders.CORRELATION_ID, "corr-1234")
 				.header(GatewayHeaders.TRACEPARENT, "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01")
 				.header(GatewayHeaders.TRACESTATE, "vendor=one")
@@ -191,13 +219,14 @@ class GatewayRoutingIT {
 	void replacesUnsafeCorrelationAndTraceHeaders() {
 		webTestClient.get()
 				.uri("/api/ledger/accounts/acc-1")
-				.header(GatewayHeaders.CORRELATION_ID, "abc\nInjected")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
+				.header(GatewayHeaders.CORRELATION_ID, "nope")
 				.header(GatewayHeaders.TRACEPARENT, "not-a-trace")
-				.header(GatewayHeaders.TRACESTATE, "bad\nstate")
+				.header(GatewayHeaders.TRACESTATE, "x".repeat(513))
 				.exchange()
 				.expectStatus().isOk()
 				.expectHeader().value(GatewayHeaders.CORRELATION_ID,
-						value -> assertThat(value).isNotEqualTo("abc\nInjected").hasSize(36));
+						value -> assertThat(value).isNotEqualTo("nope").hasSize(36));
 
 		ledger.verify(getRequestedFor(urlEqualTo("/accounts/acc-1"))
 				.withHeader(GatewayHeaders.CORRELATION_ID, matching(
@@ -214,6 +243,7 @@ class GatewayRoutingIT {
 
 		webTestClient.get()
 				.uri("/api/ledger/accounts/boom")
+				.header(HttpHeaders.AUTHORIZATION, AUTH)
 				.header(GatewayHeaders.CORRELATION_ID, "corr-safe-1")
 				.exchange()
 				.expectStatus().isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)

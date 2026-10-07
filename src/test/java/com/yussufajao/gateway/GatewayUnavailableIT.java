@@ -3,11 +3,17 @@ package com.yussufajao.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.yussufajao.gateway.routing.GatewayHeaders;
+import com.yussufajao.gateway.security.TestJwtConfiguration;
+import com.yussufajao.gateway.security.TestJwtTokens;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @SpringBootTest(
@@ -16,6 +22,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 				"gateway.upstreams.ledger=http://127.0.0.1:59999",
 				"gateway.upstreams.customer=http://127.0.0.1:59998"
 		})
+@AutoConfigureWebTestClient
+@ActiveProfiles("test")
+@Import(TestJwtConfiguration.class)
 class GatewayUnavailableIT {
 
 	@Autowired
@@ -25,6 +34,7 @@ class GatewayUnavailableIT {
 	void connectionFailureDoesNotLeakUpstreamHost() {
 		webTestClient.get()
 				.uri("/api/ledger/accounts/acc-1")
+				.header(HttpHeaders.AUTHORIZATION, TestJwtTokens.bearer("ledger.accounts.read"))
 				.header(GatewayHeaders.CORRELATION_ID, "corr-unavail")
 				.exchange()
 				.expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
