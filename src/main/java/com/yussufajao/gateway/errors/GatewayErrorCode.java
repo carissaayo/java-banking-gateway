@@ -18,7 +18,9 @@ public enum GatewayErrorCode {
             "The request does not contain valid credentials."
     ),
 	RATE_LIMIT_EXCEEDED("rate-limit-exceeded", "Rate limit exceeded", 429,
-		"The request quota for this route has been exceeded.");
+		"The request quota for this route has been exceeded."),
+	RATE_LIMITER_UNAVAILABLE("rate-limiter-unavailable", "Rate limiter unavailable", 503,
+	"The rate limiter is currently unavailable.");
 	
 
 	private static final String TYPE_BASE = "https://errors.example.test/";

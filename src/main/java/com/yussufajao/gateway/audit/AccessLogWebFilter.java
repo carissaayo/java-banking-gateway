@@ -61,6 +61,8 @@ public class AccessLogWebFilter implements WebFilter {
 		MDC.put("upstreamOutcome", outcome);
 		MDC.put("clientId", AuthenticatedClient.clientId(authentication));
 		MDC.put("subject", AuthenticatedClient.subject(authentication));
+		MDC.put("rateLimitDecision", stringAttr(exchange, GatewayAttributes.RATE_LIMIT_DECISION));
+		
 		try {
 			ACCESS.info("access");
 		}
