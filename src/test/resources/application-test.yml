@@ -5,3 +5,6 @@ gateway:
   security:
     issuer-uri: http://127.0.0.1:8180/realms/banking
     audience: banking-gateway
+  gateway:
+  redis:
+    uri: redis://127.0.0.1:6379

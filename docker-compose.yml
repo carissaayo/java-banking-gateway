@@ -30,3 +30,8 @@ services:
       KC_HTTP_ENABLED: true
     volumes:
       - ./local/keycloak:/opt/keycloak/data/import:ro
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+    - "6379:6379"
