@@ -12,11 +12,11 @@ public class GatewayTimeoutCatalog {
 
     private final Map<String, RouteTimeout> byRouteId = Map.of(
         StaticRouteCatalogConfiguration.LEDGER_WRITE, LEDGER,
-        StaticRouteCatalogConfiguration.TRANSFER_QUERY, READS,
+        StaticRouteCatalogConfiguration.TRANSACTION_QUERY, READS,
         StaticRouteCatalogConfiguration.CUSTOMER, READS,
         StaticRouteCatalogConfiguration.OPERATIONS, READS);
 
-    private RouteTimeout forRoute(String routeId){
+    public RouteTimeout forRoute(String routeId){
         RouteTimeout timeout = byRouteId.get(routeId);
         if(timeout == null){
             throw new IllegalArgumentException("no timeout policy for route " + routeId);

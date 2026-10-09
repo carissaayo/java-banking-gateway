@@ -1,6 +1,7 @@
 package com.yussufajao.gateway.routing;
 
 import com.yussufajao.gateway.config.GatewayUpstreamsProperties;
+import com.yussufajao.gateway.resilience.GatewayTimeoutCatalog;
 import com.yussufajao.gateway.resilience.RouteTimeout;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
@@ -21,6 +22,9 @@ public class StaticRouteCatalogConfiguration {
 		String ledgerUri = upstreams.ledger().toString();
 		String customerUri = upstreams.customer().toString();
 		RouteTimeout ledgerTimeout = timeouts.forRoute(LEDGER_WRITE);
+		RouteTimeout transactionTimeout = timeouts.forRoute(TRANSACTION_QUERY);
+		RouteTimeout customerTimeout = timeouts.forRoute(CUSTOMER);
+		RouteTimeout operationsTimeout = timeouts.forRoute(OPERATIONS);
 
 		return builder.routes()
 				.route(LEDGER_WRITE, route -> route
@@ -40,8 +44,8 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, TRANSACTION_QUERY))
-						.metadata("connect-timeout", ledgerTimeout.connectMillis())
-						.metadata("response-timeout", ledgerTimeout.response())
+						.metadata("connect-timeout", transactionTimeout.connectMillis())
+						.metadata("response-timeout", transactionTimeout.response())
 						.uri(ledgerUri))
 				.route(CUSTOMER, route -> route
 						.path("/api/customers/**")
@@ -50,8 +54,8 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, CUSTOMER))
-						.metadata("connect-timeout", ledgerTimeout.connectMillis())
-						.metadata("response-timeout", ledgerTimeout.response())
+						.metadata("connect-timeout", customerTimeout.connectMillis())
+						.metadata("response-timeout", customerTimeout.response())
 						.uri(customerUri))
 				.route(OPERATIONS, route -> route
 						.path("/api/operations/**")
@@ -60,8 +64,8 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, OPERATIONS))
-						.metadata("connect-timeout", ledgerTimeout.connectMillis())
-						.metadata("response-timeout", ledgerTimeout.response())
+						.metadata("connect-timeout", operationsTimeout.connectMillis())
+						.metadata("response-timeout", operationsTimeout.response())
 						.uri(customerUri))
 				.build();
 	}
