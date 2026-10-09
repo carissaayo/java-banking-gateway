@@ -2,6 +2,7 @@ package com.yussufajao.gateway.routing;
 
 import java.util.Set;
 import com.yussufajao.gateway.config.GatewayUpstreamsProperties;
+import com.yussufajao.gateway.resilience.GatewayRetryCatalog;
 import com.yussufajao.gateway.resilience.GatewayTimeoutCatalog;
 import com.yussufajao.gateway.resilience.RouteTimeout;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -19,13 +20,18 @@ public class StaticRouteCatalogConfiguration {
 	public static final String OPERATIONS = "operations";
 
 	@Bean
-	RouteLocator staticRouteCatalog(RouteLocatorBuilder builder, GatewayUpstreamsProperties upstreams, GatewayTimeoutCatalog timeouts) {
+	RouteLocator staticRouteCatalog(RouteLocatorBuilder builder, GatewayUpstreamsProperties upstreams, GatewayTimeoutCatalog timeouts, GatewayRetryCatalog retries) {
 		String ledgerUri = upstreams.ledger().toString();
 		String customerUri = upstreams.customer().toString();
 		RouteTimeout ledgerTimeout = timeouts.forRoute(LEDGER_WRITE);
 		RouteTimeout transactionTimeout = timeouts.forRoute(TRANSACTION_QUERY);
 		RouteTimeout customerTimeout = timeouts.forRoute(CUSTOMER);
 		RouteTimeout operationsTimeout = timeouts.forRoute(OPERATIONS);
+
+		RouteRetryPolicy ledgerRetry= retries.forRoute(LEDGER_WRITE);
+		RouteRetryPolicy transactionRetry = retries.forRoute(TRANSACTION_QUERY);
+		RouteRetryPolicy customerRetry = retries.forRoute(CUSTOMER);
+		RouteRetryPolicy operationsRetry = retries.forRoute(OPERATIONS);
 
 		return builder.routes()
 				.route(LEDGER_WRITE, route -> route
@@ -37,7 +43,17 @@ public class StaticRouteCatalogConfiguration {
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, LEDGER_WRITE)
 								.circuitBreaker(cb -> cb
 									.setName("ledger")
-									.setStatusCodes(Set.of("500", "502", "503", "504"))
+									.setStatusCodes(Set.of("500", "502", "503", "504")))
+								.retry(retry -> retry
+									.setRetries(ledgerRetry.maxRetries())
+									.setMethods(ledgerRetry.methods())
+									.setSeries(Set.of())
+									.setExceptions(Set.of(
+										java.io.IOException.class,
+										java.util.concurrent.TimeoutException.class,
+										io.netty.handler.timeout.TimeoutException.class
+									))
+
 								)
 							)
 						.metadata("connect-timeout", ledgerTimeout.connectMillis())
@@ -52,7 +68,17 @@ public class StaticRouteCatalogConfiguration {
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, TRANSACTION_QUERY)
 								.circuitBreaker(cb -> cb
 									.setName("ledger")
-									.setStatusCodes(Set.of("500", "502", "503", "504"))
+									.setStatusCodes(Set.of("500", "502", "503", "504")))
+								.retry(retry -> retry
+									.setRetries(transactionRetry.maxRetries())
+									.setMethods(transactionRetry.methods())
+									.setSeries(Set.of())
+									.setExceptions(Set.of(
+										java.io.IOException.class,
+										java.util.concurrent.TimeoutException.class,
+										io.netty.handler.timeout.TimeoutException.class
+									))
+
 								)
 							)
 						.metadata("connect-timeout", transactionTimeout.connectMillis())
@@ -67,7 +93,17 @@ public class StaticRouteCatalogConfiguration {
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, CUSTOMER)
 								.circuitBreaker(cb -> cb
 									.setName("customer")
-									.setStatusCodes(Set.of("500", "502", "503", "504"))
+									.setStatusCodes(Set.of("500", "502", "503", "504")))
+								.retry(retry -> retry
+									.setRetries(customerRetry.maxRetries())
+									.setMethods(customerRetry.methods())
+									.setSeries(Set.of())
+									.setExceptions(Set.of(
+										java.io.IOException.class,
+										java.util.concurrent.TimeoutException.class,
+										io.netty.handler.timeout.TimeoutException.class
+									))
+
 								)
 							)
 						.metadata("connect-timeout", customerTimeout.connectMillis())
@@ -82,7 +118,16 @@ public class StaticRouteCatalogConfiguration {
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, OPERATIONS)
 								.circuitBreaker(cb -> cb
 									.setName("operations")
-									.setStatusCodes(Set.of("500", "502", "503", "504"))
+									.setStatusCodes(Set.of("500", "502", "503", "504")))
+								.retry(retry -> retry
+									.setRetries(operationsRetry.maxRetries())
+									.setMethods(operationsRetry.methods())
+									.setSeries(Set.of())
+									.setExceptions(Set.of(
+										java.io.IOException.class,
+										java.util.concurrent.TimeoutException.class,
+										io.netty.handler.timeout.TimeoutException.class
+									))
 								)
 							)
 						.metadata("connect-timeout", operationsTimeout.connectMillis())
