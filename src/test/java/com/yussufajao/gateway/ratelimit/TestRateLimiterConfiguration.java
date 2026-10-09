@@ -1,11 +1,11 @@
 package com.yussufajao.gateway.ratelimit;
 
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import reactor.core.publisher.Mono;
 
-@TestConfiguration
+@Configuration
 @Profile("test")
 public class TestRateLimiterConfiguration {
 

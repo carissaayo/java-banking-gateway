@@ -29,7 +29,7 @@ public class GatewayProblemHttpWriter {
         GatewayProblem problem = mapper.of(code, instance, correlationId);
         byte[] bytes;
         try{
-            bytes = jsonMapper.writeValuesAsBytes(problem);
+            bytes = jsonMapper.writeValueAsBytes(problem);
         }
         catch (JacksonException ex){
             bytes = "{\"title\":\"Internal error\",\"status\":500}".getBytes();

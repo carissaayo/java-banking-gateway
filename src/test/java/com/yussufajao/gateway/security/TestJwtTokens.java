@@ -28,6 +28,10 @@ public final class TestJwtTokens {
 		return "Bearer " + rs256(ISSUER, List.of(AUDIENCE), Instant.now().plusSeconds(300), scopes);
 	}
 
+	public static String bearerFor(String clientId, String subject, String... scopes) {
+		return "Bearer " + rs256For(clientId, subject, scopes);
+	}
+
 	public static String expired() {
 		return rs256(ISSUER, List.of(AUDIENCE), Instant.now().minusSeconds(60), "ledger.accounts.read");
 	}
@@ -65,6 +69,31 @@ public final class TestJwtTokens {
 					.expirationTime(Date.from(exp))
 					.issueTime(Date.from(Instant.now().minusSeconds(5)))
 					.subject("user-1")
+					.claim("scope", String.join(" ", scopes))
+					.build();
+			SignedJWT jwt = new SignedJWT(
+					new JWSHeader.Builder(JWSAlgorithm.RS256)
+							.type(JOSEObjectType.JWT)
+							.keyID(RSA_KEY.getKeyID())
+							.build(),
+					claims);
+			jwt.sign(new RSASSASigner(RSA_KEY));
+			return jwt.serialize();
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Could not sign test JWT", ex);
+		}
+	}
+
+	private static String rs256For(String clientId, String subject, String... scopes) {
+		try {
+			JWTClaimsSet claims = new JWTClaimsSet.Builder()
+					.issuer(ISSUER)
+					.audience(AUDIENCE)
+					.expirationTime(Date.from(Instant.now().plusSeconds(300)))
+					.issueTime(Date.from(Instant.now().minusSeconds(5)))
+					.subject(subject)
+					.claim("azp", clientId)
 					.claim("scope", String.join(" ", scopes))
 					.build();
 			SignedJWT jwt = new SignedJWT(

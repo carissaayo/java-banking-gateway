@@ -6,9 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration;
 
-@SpringBootApplication(exclude= {
-	RedisAutoConfiguration.class,
-	RedisReactiveAutoConfiguration.class
+@SpringBootApplication(exclude = {
+		DataRedisAutoConfiguration.class,
+		DataRedisReactiveAutoConfiguration.class
 })
 @ConfigurationPropertiesScan
 public class BankingGatewayApplication {

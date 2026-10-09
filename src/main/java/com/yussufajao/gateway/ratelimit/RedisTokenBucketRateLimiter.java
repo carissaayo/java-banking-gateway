@@ -3,12 +3,14 @@ package com.yussufajao.gateway.ratelimit;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @Component
-public class RedisTokenBucketRateLimiter implements RateLimiter{
+@Profile("!test")
+public class RedisTokenBucketRateLimiter implements RateLimiter {
     private static final String SCRIPT = """
 			local tokens_key = KEYS[1]
 			local timestamp_key = KEYS[2]
@@ -65,9 +67,9 @@ public class RedisTokenBucketRateLimiter implements RateLimiter{
             List<?> values = (List<?>) result;
             boolean allowed = ((Number) values.get(0)).intValue() == 1;
             int remaining = Math.max(0, ((Number) values.get(1)).intValue());
-            return allowed 
+            return allowed
             ? RateLimitDecision.allow(remaining, policy)
             : RateLimitDecision.deny(remaining, policy);
-        })
+        });
     }
 }
