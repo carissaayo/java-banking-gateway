@@ -50,3 +50,27 @@ management:
         enabled: true
       show-details: never
       show-components: never
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 8
+        failureRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        slowCallRateThreshold: 80
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        registerHealthIndicator: false
+    instances:
+      ledger:
+        baseConfig: default
+        slowCallDurationThreshold: 2s
+      customer:
+        baseConfig: default
+        slowCallDurationThreshold: 4s
+      operations:
+        baseConfig: default
+        slowCallDurationThreshold: 4s
