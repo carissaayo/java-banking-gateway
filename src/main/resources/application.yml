@@ -10,6 +10,9 @@ spring:
           discovery:
             locator:
               enabled: false
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 6s
   security:
     oauth2:
       resourceserver:
