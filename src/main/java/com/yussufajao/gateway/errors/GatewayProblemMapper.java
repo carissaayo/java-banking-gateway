@@ -3,6 +3,7 @@ package com.yussufajao.gateway.errors;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeoutException;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,9 @@ public class GatewayProblemMapper {
 	private static GatewayErrorCode classify(Throwable error) {
 		if (isNotFound(error)) {
 			return GatewayErrorCode.ROUTE_NOT_FOUND;
+		}
+		if (isCircuitOpen(error)) {
+			return GatewayErrorCode.CIRCUIT_OPEN;
 		}
 		if (isTimeout(error)) {
 			return GatewayErrorCode.UPSTREAM_TIMEOUT;
@@ -68,6 +72,11 @@ public class GatewayProblemMapper {
 
 	private static boolean isUnavailable(Throwable error) {
 		return hasCause(error, ConnectException.class) || hasCause(error, UnknownHostException.class);
+	}
+
+	private static boolean isCircuitOpen(Throwable error){
+		return error instanceof CallNotPermittedException
+			|| hasCause(error, CallNotPermittedException.class);
 	}
 
 	private static boolean hasCause(Throwable error, Class<? extends Throwable> type) {
