@@ -21,7 +21,7 @@ gateway:
     issuer-uri: ${GATEWAY_SECURITY_ISSUER_URI}
     audience: ${GATEWAY_SECURITY_AUDIENCE}
   redis:
-    uri:${GATEWAY_REDIS_URI}
+    uri: ${GATEWAY_REDIS_URI}
     
 server:
   port: 8080
