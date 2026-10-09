@@ -7,3 +7,21 @@ gateway:
     audience: banking-gateway
   redis:
     uri: redis://127.0.0.1:6379
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 4
+        minimumNumberOfCalls: 4
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 1
+        automaticTransitionFromOpenToHalfOpenEnabled: false
+        registerHealthIndicator: false
+    instances:
+      ledger:
+        baseConfig: default
+      customer:
+        baseConfig: default
+      operations:
+        baseConfig: default
