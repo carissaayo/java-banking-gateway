@@ -9,7 +9,7 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
 @Configuration
-@Profile("!test")
+@Profile("!test") // so ./mvnw test never opens Redis
 public class GatewayRedisConfiguration {
     
     @Bean
