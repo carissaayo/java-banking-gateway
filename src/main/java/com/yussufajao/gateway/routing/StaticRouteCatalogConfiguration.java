@@ -1,5 +1,6 @@
 package com.yussufajao.gateway.routing;
 
+import java.util.Set;
 import com.yussufajao.gateway.config.GatewayUpstreamsProperties;
 import com.yussufajao.gateway.resilience.GatewayTimeoutCatalog;
 import com.yussufajao.gateway.resilience.RouteTimeout;
@@ -34,6 +35,10 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(2)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, LEDGER_WRITE))
+								.circuitBreaker(cb -> cb
+									.setName("ledger")
+									.setStatusCode(Set.of("500", "502", "503", "504"))
+								)
 						.metadata("connect-timeout", ledgerTimeout.connectMillis())
 						.metadata("response-timeout", ledgerTimeout.response())
 						.uri(ledgerUri))
@@ -44,6 +49,10 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, TRANSACTION_QUERY))
+								.circuitBreaker(cb -> cb
+									.setName("ledger")
+									.setStatusCode(Set.of("500", "502", "503", "504"))
+								)
 						.metadata("connect-timeout", transactionTimeout.connectMillis())
 						.metadata("response-timeout", transactionTimeout.response())
 						.uri(ledgerUri))
@@ -54,6 +63,10 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, CUSTOMER))
+								.circuitBreaker(cb -> cb
+									.setName("customer")
+									.setStatusCode(Set.of("500", "502", "503", "504"))
+								)
 						.metadata("connect-timeout", customerTimeout.connectMillis())
 						.metadata("response-timeout", customerTimeout.response())
 						.uri(customerUri))
@@ -64,6 +77,10 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, OPERATIONS))
+								.circuitBreaker(cb -> cb
+									.setName("operations")
+									.setStatusCode(Set.of("500", "502", "503", "504"))
+								)
 						.metadata("connect-timeout", operationsTimeout.connectMillis())
 						.metadata("response-timeout", operationsTimeout.response())
 						.uri(customerUri))
