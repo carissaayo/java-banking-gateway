@@ -1,6 +1,7 @@
 package com.yussufajao.gateway.routing;
 
 import com.yussufajao.gateway.config.GatewayUpstreamsProperties;
+import com.yussufajao.gateway.resilience.RouteTimeout;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -16,9 +17,10 @@ public class StaticRouteCatalogConfiguration {
 	public static final String OPERATIONS = "operations";
 
 	@Bean
-	RouteLocator staticRouteCatalog(RouteLocatorBuilder builder, GatewayUpstreamsProperties upstreams) {
+	RouteLocator staticRouteCatalog(RouteLocatorBuilder builder, GatewayUpstreamsProperties upstreams, GatewayTimeoutCatalog timeouts) {
 		String ledgerUri = upstreams.ledger().toString();
 		String customerUri = upstreams.customer().toString();
+		RouteTimeout ledgerTimeout = timeouts.forRoute(LEDGER_WRITE);
 
 		return builder.routes()
 				.route(LEDGER_WRITE, route -> route
@@ -28,6 +30,8 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(2)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, LEDGER_WRITE))
+						.metadata("connect-timeout", ledgerTimeout.connectMillis())
+						.metadata("response-timeout", ledgerTimeout.response())
 						.uri(ledgerUri))
 				.route(TRANSACTION_QUERY, route -> route
 						.path("/api/transactions/**")
@@ -36,6 +40,8 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, TRANSACTION_QUERY))
+						.metadata("connect-timeout", ledgerTimeout.connectMillis())
+						.metadata("response-timeout", ledgerTimeout.response())
 						.uri(ledgerUri))
 				.route(CUSTOMER, route -> route
 						.path("/api/customers/**")
@@ -44,6 +50,8 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, CUSTOMER))
+						.metadata("connect-timeout", ledgerTimeout.connectMillis())
+						.metadata("response-timeout", ledgerTimeout.response())
 						.uri(customerUri))
 				.route(OPERATIONS, route -> route
 						.path("/api/operations/**")
@@ -52,6 +60,8 @@ public class StaticRouteCatalogConfiguration {
 						.filters(filters -> filters
 								.stripPrefix(1)
 								.addResponseHeader(GatewayHeaders.ROUTE_ID, OPERATIONS))
+						.metadata("connect-timeout", ledgerTimeout.connectMillis())
+						.metadata("response-timeout", ledgerTimeout.response())
 						.uri(customerUri))
 				.build();
 	}
