@@ -20,7 +20,9 @@ public enum GatewayErrorCode {
 	RATE_LIMIT_EXCEEDED("rate-limit-exceeded", "Rate limit exceeded", 429,
 		"The request quota for this route has been exceeded."),
 	RATE_LIMITER_UNAVAILABLE("rate-limiter-unavailable", "Rate limiter unavailable", 503,
-	"The rate limiter is currently unavailable.");
+	"The rate limiter is currently unavailable."),
+	CIRCUIT_OPEN("circuit-open", "Circuit open", 503,
+		"The upstream circuit breaker is open.");
 	
 
 	private static final String TYPE_BASE = "https://errors.example.test/";
