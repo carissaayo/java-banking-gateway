@@ -4,6 +4,7 @@ import java.util.Set;
 import com.yussufajao.gateway.config.GatewayUpstreamsProperties;
 import com.yussufajao.gateway.resilience.GatewayRetryCatalog;
 import com.yussufajao.gateway.resilience.GatewayTimeoutCatalog;
+import com.yussufajao.gateway.resilience.RouteRetryPolicy;
 import com.yussufajao.gateway.resilience.RouteTimeout;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
