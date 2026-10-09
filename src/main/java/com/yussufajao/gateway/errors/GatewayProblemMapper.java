@@ -59,7 +59,11 @@ public class GatewayProblemMapper {
 		if (error instanceof TimeoutException) {
 			return true;
 		}
-		return hasCause(error, TimeoutException.class);
+		if (error instanceof io.netty.handler.timeout.TimeoutException){
+			return true;
+		}
+		return hasCause(error, TimeoutException.class)
+				|| hasCause(error, io.netty.handler.timeout.TimeoutException.class);
 	}
 
 	private static boolean isUnavailable(Throwable error) {
