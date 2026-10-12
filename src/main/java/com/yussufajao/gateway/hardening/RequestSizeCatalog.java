@@ -9,7 +9,7 @@ import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 
 
-public class RequestSizeCatlog{
+public class RequestSizeCatalog {
 
     private static final PathPatternParser PARSER = new PathPatternParser();
     private static final long NO_BODY= 0L;
@@ -26,7 +26,7 @@ public class RequestSizeCatlog{
         PathContainer path= PathContainer.parsePath(rawPath);
         for (Rule rule : rules){
             if(rule.methods().contains(method) && rule.pattern().matches(path)){
-                return Optional.of(rule.maxBodyBytes());
+                return Optional.of(rule.maxBytes());
             }
         }
         return Optional.empty();
