@@ -12,6 +12,7 @@ import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.yussufajao.gateway.routing.GatewayHeaders;
 import com.yussufajao.gateway.security.TestJwtConfiguration;
 import com.yussufajao.gateway.security.TestJwtTokens;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,7 @@ class GatewayRetryIT {
 		webTestClient.post()
 				.uri("/api/ledger/transfers")
 				.header(HttpHeaders.AUTHORIZATION, TestJwtTokens.bearer("ledger.transfers.write"))
+				.header(GatewayHeaders.IDEMPOTENCY_KEY, "retry-it-1")
 				.contentType(MediaType.APPLICATION_JSON)
 				.bodyValue("{\"amount\":\"1.00\"}")
 				.exchange()

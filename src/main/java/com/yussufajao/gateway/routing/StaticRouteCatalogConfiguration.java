@@ -1,6 +1,8 @@
 package com.yussufajao.gateway.routing;
 
+import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import com.yussufajao.gateway.config.GatewayUpstreamsProperties;
 import com.yussufajao.gateway.resilience.GatewayRetryCatalog;
 import com.yussufajao.gateway.resilience.GatewayTimeoutCatalog;
@@ -47,13 +49,12 @@ public class StaticRouteCatalogConfiguration {
 									.setStatusCodes(Set.of("500", "502", "503", "504")))
 								.retry(retry -> retry
 									.setRetries(ledgerRetry.maxRetries())
-									.setMethods(ledgerRetry.methods())
-									.setSeries(Set.of())
-									.setExceptions(Set.of(
-										java.io.IOException.class,
-										java.util.concurrent.TimeoutException.class,
-										io.netty.handler.timeout.TimeoutException.class
-									))
+									.setMethods(ledgerRetry.methods().toArray(HttpMethod[]::new))
+									.setSeries()
+									.setExceptions(
+										IOException.class,
+										TimeoutException.class,
+										io.netty.handler.timeout.TimeoutException.class)
 
 								)
 							)
@@ -72,13 +73,12 @@ public class StaticRouteCatalogConfiguration {
 									.setStatusCodes(Set.of("500", "502", "503", "504")))
 								.retry(retry -> retry
 									.setRetries(transactionRetry.maxRetries())
-									.setMethods(transactionRetry.methods())
-									.setSeries(Set.of())
-									.setExceptions(Set.of(
-										java.io.IOException.class,
-										java.util.concurrent.TimeoutException.class,
-										io.netty.handler.timeout.TimeoutException.class
-									))
+									.setMethods(transactionRetry.methods().toArray(HttpMethod[]::new))
+									.setSeries()
+									.setExceptions(
+										IOException.class,
+										TimeoutException.class,
+										io.netty.handler.timeout.TimeoutException.class)
 
 								)
 							)
@@ -97,13 +97,12 @@ public class StaticRouteCatalogConfiguration {
 									.setStatusCodes(Set.of("500", "502", "503", "504")))
 								.retry(retry -> retry
 									.setRetries(customerRetry.maxRetries())
-									.setMethods(customerRetry.methods())
-									.setSeries(Set.of())
-									.setExceptions(Set.of(
-										java.io.IOException.class,
-										java.util.concurrent.TimeoutException.class,
-										io.netty.handler.timeout.TimeoutException.class
-									))
+									.setMethods(customerRetry.methods().toArray(HttpMethod[]::new))
+									.setSeries()
+									.setExceptions(
+										IOException.class,
+										TimeoutException.class,
+										io.netty.handler.timeout.TimeoutException.class)
 
 								)
 							)
@@ -122,13 +121,12 @@ public class StaticRouteCatalogConfiguration {
 									.setStatusCodes(Set.of("500", "502", "503", "504")))
 								.retry(retry -> retry
 									.setRetries(operationsRetry.maxRetries())
-									.setMethods(operationsRetry.methods())
-									.setSeries(Set.of())
-									.setExceptions(Set.of(
-										java.io.IOException.class,
-										java.util.concurrent.TimeoutException.class,
-										io.netty.handler.timeout.TimeoutException.class
-									))
+									.setMethods(operationsRetry.methods().toArray(HttpMethod[]::new))
+									.setSeries()
+									.setExceptions(
+										IOException.class,
+										TimeoutException.class,
+										io.netty.handler.timeout.TimeoutException.class)
 								)
 							)
 						.metadata("connect-timeout", operationsTimeout.connectMillis())
