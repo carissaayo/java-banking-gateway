@@ -24,7 +24,9 @@ public enum GatewayErrorCode {
 	CIRCUIT_OPEN("circuit-open", "Circuit open", 503,
 		"The upstream circuit breaker is open."),
 	MISSING_IDEMPOTENCY_KEY("missing-idempotency-key", "Missing idempotency key", 400,
-		"This write requires an Idempotency-Key header.");
+		"This write requires an Idempotency-Key header."),
+		REQUEST_TOO_LARGE("request-too-large", "Request too large", 413,
+		"The request body exceeds the allowed size.");
 	
 
 	private static final String TYPE_BASE = "https://errors.example.test/";
