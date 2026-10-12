@@ -1,5 +1,6 @@
 package com.yussufajao.gateway.security;
 
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,6 +22,7 @@ public class SecurityConfig {
 
 	private final GatewayAuthenticationFailureHandler authenticationFailureHandler;
 	private final GatewayAccessDeniedHandler accessDeniedHandler;
+	private final GatewayCorsProperties cors;
 
 	public SecurityConfig(
 			GatewayAuthenticationFailureHandler authenticationFailureHandler,
@@ -39,6 +41,32 @@ public class SecurityConfig {
 				.csrf(ServerHttpSecurity.CsrfSpec::disable)
 				.httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
 				.formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+				.cors(spec -> spec.configurationSource(exchange ->{
+					if(cors.allowedOrigins().isEmpty()){
+						return null;
+					}
+					var config = new org.springframework.web.cors.CorsConfiguration();
+					config.setAllowedOrigins(cors.allowedOrigins());
+					config.setAllowedMethods(List.of("GET", "HEAD", "POST", "PATCH", "OPTINS"));
+					config.setAllowedHeaders(List.of(
+						"Authorization",
+						"Content-Type",
+						"Idempotency-Key",
+						"X-Correlation-ID",
+						"traceparent",
+						"tracestate"
+					));
+					config.setExposedHeaders(List.of(
+						"X-Correlation-ID",
+						"X-Gateway-Route",
+						"X-RateLimit-Limit",
+						"X-RateLimit-Remaining",
+						"X-RateLimit-Replenish-Rate"
+					));
+					config.setAllowCredentials(false);
+					config.setMaxAge(java.time.Duration.ofMinutes(10));
+					return config;
+				}))
 				.authorizeExchange(exchanges -> exchanges
 						.pathMatchers(
 								HttpMethod.GET,
