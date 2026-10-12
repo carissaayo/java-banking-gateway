@@ -9,6 +9,7 @@ public final class GatewayHeaders {
 	public static final String RATE_LIMIT_LIMIT = "X-RateLimit-Limit";
 	public static final String RATE_LIMIT_REMAINING = "X-RateLimit-Remaining";
 	public static final String RATE_LIMIT_REPLENISH_RATE = "X-RateLimit-Replenish-Rate";
+	public static final String IDEMPOTENCY_KEY = "Idempotency-Key";
 
 	private GatewayHeaders() {
 	}

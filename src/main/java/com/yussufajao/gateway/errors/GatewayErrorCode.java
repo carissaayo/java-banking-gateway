@@ -22,7 +22,9 @@ public enum GatewayErrorCode {
 	RATE_LIMITER_UNAVAILABLE("rate-limiter-unavailable", "Rate limiter unavailable", 503,
 	"The rate limiter is currently unavailable."),
 	CIRCUIT_OPEN("circuit-open", "Circuit open", 503,
-		"The upstream circuit breaker is open.");
+		"The upstream circuit breaker is open."),
+	MISSING_IDEMPOTENCY_KEY("missing-idempotency-key", "Missing idempotency key", 400,
+		"This write requires an Idempotency-Key header.");
 	
 
 	private static final String TYPE_BASE = "https://errors.example.test/";
