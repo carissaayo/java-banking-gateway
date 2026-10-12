@@ -1,5 +1,6 @@
 package com.yussufajao.gateway.security;
 
+import com.yussufajao.gateway.config.GatewayCorsProperties;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,9 +27,11 @@ public class SecurityConfig {
 
 	public SecurityConfig(
 			GatewayAuthenticationFailureHandler authenticationFailureHandler,
-			GatewayAccessDeniedHandler accessDeniedHandler) {
+			GatewayAccessDeniedHandler accessDeniedHandler,
+			GatewayCorsProperties cors) {
 		this.authenticationFailureHandler = authenticationFailureHandler;
 		this.accessDeniedHandler = accessDeniedHandler;
+		this.cors = cors;
 	}
 
 	@Bean
@@ -47,7 +50,7 @@ public class SecurityConfig {
 					}
 					var config = new org.springframework.web.cors.CorsConfiguration();
 					config.setAllowedOrigins(cors.allowedOrigins());
-					config.setAllowedMethods(List.of("GET", "HEAD", "POST", "PATCH", "OPTINS"));
+					config.setAllowedMethods(List.of("GET", "HEAD", "POST", "PATCH", "OPTIONS"));
 					config.setAllowedHeaders(List.of(
 						"Authorization",
 						"Content-Type",

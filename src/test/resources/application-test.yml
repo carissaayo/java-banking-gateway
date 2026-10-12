@@ -7,6 +7,9 @@ gateway:
     audience: banking-gateway
   redis:
     uri: redis://127.0.0.1:6379
+  cors:
+    allowed-origins:
+      - https://app.example.test
 resilience4j:
   circuitbreaker:
     configs:
