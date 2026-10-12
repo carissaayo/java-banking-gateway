@@ -7,6 +7,10 @@ spring:
     gateway:
       server:
         webflux:
+          forwarded:
+            enabled: false
+          x-forwarded:
+            enabled: false
           discovery:
             locator:
               enabled: false
