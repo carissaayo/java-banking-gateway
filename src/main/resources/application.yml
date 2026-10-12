@@ -25,6 +25,8 @@ gateway:
     audience: ${GATEWAY_SECURITY_AUDIENCE}
   redis:
     uri: ${GATEWAY_REDIS_URI}
+  cors:
+    allowed-origins: ${GATEWAY_CORS_ALLOWED_ORIGINS:}
     
 server:
   port: 8080
