@@ -33,6 +33,7 @@ server:
     include-stacktrace: never
     include-binding-errors: never
     include-exception: false
+  max-http-request-header-size: 8KB
 
 logging:
   structured:
