@@ -11,7 +11,7 @@ public final class HopByHopHeaders {
 			"proxy-authorization",
 			"te",
 			"trailer",
- mar			"transfer-encoding",
+			"transfer-encoding",
 			"upgrade",
 			"x-forwarded-for",
 			"x-forwarded-host",

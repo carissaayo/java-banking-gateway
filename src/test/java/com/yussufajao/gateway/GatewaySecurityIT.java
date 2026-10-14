@@ -213,6 +213,30 @@ class GatewaySecurityIT {
 				.jsonPath("$.status").isEqualTo("UP");
 	}
 
+	@Test
+	void healthIncludesApiSecurityHeaders() {
+		webTestClient.get()
+				.uri("/actuator/health")
+				.exchange()
+				.expectStatus().isOk()
+				.expectHeader().valueEquals("X-Content-Type-Options", "nosniff")
+				.expectHeader().valueEquals("X-Frame-Options", "DENY")
+				.expectHeader().valueEquals("Referrer-Policy", "no-referrer")
+				.expectHeader().valueEquals(
+						"Content-Security-Policy",
+						"default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+	}
+
+	@Test
+	void apiErrorAlsoIncludesSecurityHeaders() {
+		webTestClient.get()
+				.uri("/api/ledger/accounts/acc-1")
+				.exchange()
+				.expectStatus().isUnauthorized()
+				.expectHeader().valueEquals("X-Content-Type-Options", "nosniff")
+				.expectHeader().valueEquals("X-Frame-Options", "DENY");
+	}
+
 	private static BodyContentSpec expectProblem(BodyContentSpec body, int status, String slug) {
 		return body.jsonPath("$.type").isEqualTo("https://errors.example.test/" + slug)
 				.jsonPath("$.status").isEqualTo(status)

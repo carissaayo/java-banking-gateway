@@ -4,18 +4,21 @@ import com.yussufajao.gateway.config.GatewayCorsProperties;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
-import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.web.server.header.XFrameOptionsServerHttpHeadersWriter.Mode;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter.ReferrerPolicy;
 import org.springframework.security.oauth2.jwt.SupplierReactiveJwtDecoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -44,6 +47,15 @@ public class SecurityConfig {
 				.csrf(ServerHttpSecurity.CsrfSpec::disable)
 				.httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
 				.formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+				.headers( headers -> headers
+					.contentTypeOptions(Customizer.withDefaults())
+					.frameOptions(frame -> frame.mode(Mode.DENY))
+					.ReferrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
+					.contentSecurityPolicy(csp -> csp.policyDirectives(
+						"default-src 'none'; frame-ancestors 'none'; base-uri 'none"))
+					.permissionsPolicyHeader(policy -> policy.policy(
+						"camera=(), microphone=(), geolocation=()"))
+					.hsts(hsts.disable()))
 				.cors(spec -> spec.configurationSource(exchange ->{
 					if(cors.allowedOrigins().isEmpty()){
 						return null;
