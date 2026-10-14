@@ -7,7 +7,6 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import com.yussufajao.gateway.routing.GatewayHeaders;
 import com.yussufajao.gateway.security.TestJwtConfiguration;
 import com.yussufajao.gateway.security.TestJwtTokens;
 import org.junit.jupiter.api.Test;
