@@ -3,6 +3,8 @@ spring:
     name: banking-api-gateway
   main:
     web-application-type: reactive
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   cloud:
     gateway:
       server:
@@ -38,6 +40,7 @@ gateway:
     
 server:
   port: 8080
+  shutdown: graceful
   error:
     include-message: never
     include-stacktrace: never
