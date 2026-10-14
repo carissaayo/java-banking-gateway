@@ -2,6 +2,7 @@ package com.yussufajao.gateway.errors;
 
 import com.yussufajao.gateway.correlation.GatewayAttributes;
 import com.yussufajao.gateway.correlation.CorrelationId;
+import com.yussufajao.gateway.observability.GatewayMeters;
 import com.yussufajao.gateway.routing.GatewayHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +28,15 @@ public class GatewayErrorWebExceptionHandler extends AbstractErrorWebExceptionHa
 	private static final Logger log = LoggerFactory.getLogger(GatewayErrorWebExceptionHandler.class);
 
 	private final GatewayProblemMapper mapper;
+	private final GatewayMeters meters;
 
 	public GatewayErrorWebExceptionHandler(ErrorAttributes errorAttributes, WebProperties webProperties,
 			ApplicationContext applicationContext, ServerCodecConfigurer serverCodecConfigurer,
-			GatewayProblemMapper mapper) {
+			GatewayProblemMapper mapper,
+			GatewayMeters meters) {
 		super(errorAttributes, webProperties.getResources(), applicationContext);
 		this.mapper = mapper;
+		this.meters = meters;
 		setMessageReaders(serverCodecConfigurer.getReaders());
 		setMessageWriters(serverCodecConfigurer.getWriters());
 	}
@@ -46,6 +50,7 @@ public class GatewayErrorWebExceptionHandler extends AbstractErrorWebExceptionHa
 		String path = request.path();
 		String correlationId = correlationId(request);
 		GatewayProblem problem = mapper.toProblem(getError(request), path, correlationId);
+		meters.mappedFailure(GatewayErrorCode.fromType(problem.type()));
 		request.exchange().getAttributes().put(GatewayAttributes.UPSTREAM_OUTCOME, outcome(problem));
 		return ServerResponse.status(problem.status())
 				.contentType(MediaType.APPLICATION_PROBLEM_JSON)

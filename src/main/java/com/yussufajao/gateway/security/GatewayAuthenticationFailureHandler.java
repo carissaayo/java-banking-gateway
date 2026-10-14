@@ -5,6 +5,7 @@ import com.yussufajao.gateway.correlation.GatewayAttributes;
 import com.yussufajao.gateway.errors.GatewayErrorCode;
 import com.yussufajao.gateway.errors.GatewayProblem;
 import com.yussufajao.gateway.errors.GatewayProblemMapper;
+import com.yussufajao.gateway.observability.GatewayMeters;
 import com.yussufajao.gateway.routing.GatewayHeaders;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
@@ -23,10 +24,15 @@ public class GatewayAuthenticationFailureHandler implements ServerAuthentication
 
 	private final GatewayProblemMapper mapper;
 	private final JsonMapper jsonMapper;
+	private final GatewayMeters meters;
 
-	public GatewayAuthenticationFailureHandler(GatewayProblemMapper mapper, JsonMapper jsonMapper) {
+	public GatewayAuthenticationFailureHandler(
+			GatewayProblemMapper mapper,
+			JsonMapper jsonMapper,
+			GatewayMeters meters) {
 		this.mapper = mapper;
 		this.jsonMapper = jsonMapper;
+		this.meters = meters;
 	}
 
 	@Override
@@ -35,6 +41,7 @@ public class GatewayAuthenticationFailureHandler implements ServerAuthentication
 	}
 
 	Mono<Void> write(ServerWebExchange exchange, GatewayErrorCode code, HttpStatus status) {
+		meters.authFailure(code);
 		String correlationId = correlationId(exchange);
 		String instance = exchange.getRequest().getURI().getRawPath();
 		GatewayProblem problem = mapper.of(code, instance, correlationId);

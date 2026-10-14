@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.yussufajao.gateway.errors.GatewayErrorCode;
 import com.yussufajao.gateway.errors.GatewayProblemHttpWriter;
+import com.yussufajao.gateway.observability.GatewayMeters;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,7 @@ class RateLimitWebFilterTest {
 	void healthSkipsLimiter() {
 		RateLimiter limiter = (key, policy) -> Mono.error(new AssertionError("should not consume"));
 		GatewayProblemHttpWriter writer = mock(GatewayProblemHttpWriter.class);
-		var filter = new RateLimitWebFilter(limiter, writer);
+		var filter = new RateLimitWebFilter(limiter, writer, new GatewayMeters(new SimpleMeterRegistry()));
 		var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/actuator/health"));
 		filter.filter(exchange, ex -> Mono.empty()).block();
 		assertThat(exchange.getResponse().getStatusCode()).isNull();
@@ -36,19 +38,25 @@ class RateLimitWebFilterTest {
 	void exceededWritesTooManyRequests() {
 		RateLimiter limiter = (key, policy) -> Mono.just(RateLimitDecision.deny(0, policy));
 		GatewayProblemHttpWriter writer = mockWriter();
-		var filter = new RateLimitWebFilter(limiter, writer);
+		var registry = new SimpleMeterRegistry();
+		var filter = new RateLimitWebFilter(limiter, writer, new GatewayMeters(registry));
 		var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/api/ledger/transfers"));
 		filter.filter(exchange, ex -> Mono.empty())
 				.contextWrite(ReactiveSecurityContextHolder.withAuthentication(jwtAuth()))
 				.block();
 		verify(writer).write(eq(exchange), eq(GatewayErrorCode.RATE_LIMIT_EXCEEDED), eq(HttpStatus.TOO_MANY_REQUESTS));
+		assertThat(registry.counter(
+				"gateway.rate_limit",
+				"policy", "ledger-transfers-write",
+				"decision", GatewayMeters.DECISION_EXCEEDED).count()).isEqualTo(1.0);
 	}
 
 	@Test
 	void redisFailureFailClosedWrites503() {
 		RateLimiter limiter = (key, policy) -> Mono.error(new IllegalStateException("redis down"));
 		GatewayProblemHttpWriter writer = mockWriter();
-		var filter = new RateLimitWebFilter(limiter, writer);
+		var registry = new SimpleMeterRegistry();
+		var filter = new RateLimitWebFilter(limiter, writer, new GatewayMeters(registry));
 		var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/api/ledger/transfers"));
 		filter.filter(exchange, ex -> Mono.empty())
 				.contextWrite(ReactiveSecurityContextHolder.withAuthentication(jwtAuth()))
@@ -57,13 +65,18 @@ class RateLimitWebFilterTest {
 				eq(exchange),
 				eq(GatewayErrorCode.RATE_LIMITER_UNAVAILABLE),
 				eq(HttpStatus.SERVICE_UNAVAILABLE));
+		assertThat(registry.counter(
+				"gateway.rate_limit",
+				"policy", "ledger-transfers-write",
+				"decision", GatewayMeters.DECISION_FAIL_CLOSED).count()).isEqualTo(1.0);
 	}
 
 	@Test
 	void redisFailureFailOpenContinues() {
 		RateLimiter limiter = (key, policy) -> Mono.error(new IllegalStateException("redis down"));
 		GatewayProblemHttpWriter writer = mock(GatewayProblemHttpWriter.class);
-		var filter = new RateLimitWebFilter(limiter, writer);
+		var registry = new SimpleMeterRegistry();
+		var filter = new RateLimitWebFilter(limiter, writer, new GatewayMeters(registry));
 		var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/transactions/txn-1"));
 		boolean[] continued = {false};
 		filter.filter(exchange, ex -> {
@@ -73,6 +86,10 @@ class RateLimitWebFilterTest {
 				.contextWrite(ReactiveSecurityContextHolder.withAuthentication(jwtAuth()))
 				.block();
 		assertThat(continued[0]).isTrue();
+		assertThat(registry.counter(
+				"gateway.rate_limit",
+				"policy", "transaction-query",
+				"decision", GatewayMeters.DECISION_FAIL_OPEN).count()).isEqualTo(1.0);
 	}
 
 	private static GatewayProblemHttpWriter mockWriter() {

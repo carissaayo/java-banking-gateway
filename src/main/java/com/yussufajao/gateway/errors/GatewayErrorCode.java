@@ -47,8 +47,23 @@ public enum GatewayErrorCode {
 		this.detail = detail;
 	}
 
+	public String slug() {
+		return slug;
+	}
+
 	public String type() {
 		return TYPE_BASE + slug;
+	}
+
+	public static GatewayErrorCode fromType(String type) {
+		if (type != null) {
+			for (GatewayErrorCode code : values()) {
+				if (code.type().equals(type)) {
+					return code;
+				}
+			}
+		}
+		return INTERNAL_ERROR;
 	}
 
 	public String title() {

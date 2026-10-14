@@ -4,6 +4,7 @@ import com.yussufajao.gateway.audit.AuthenticatedClient;
 import com.yussufajao.gateway.correlation.GatewayAttributes;
 import com.yussufajao.gateway.errors.GatewayErrorCode;
 import com.yussufajao.gateway.errors.GatewayProblemHttpWriter;
+import com.yussufajao.gateway.observability.GatewayMeters;
 import com.yussufajao.gateway.routing.GatewayHeaders;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -29,10 +30,15 @@ public class RateLimitWebFilter implements WebFilter {
 	private final RateLimitPolicyCatalog catalog = new RateLimitPolicyCatalog();
 	private final RateLimiter rateLimiter;
 	private final GatewayProblemHttpWriter problemWriter;
+	private final GatewayMeters meters;
 
-	public RateLimitWebFilter(RateLimiter rateLimiter, GatewayProblemHttpWriter problemWriter) {
+	public RateLimitWebFilter(
+			RateLimiter rateLimiter,
+			GatewayProblemHttpWriter problemWriter,
+			GatewayMeters meters) {
 		this.rateLimiter = rateLimiter;
 		this.problemWriter = problemWriter;
+		this.meters = meters;
 	}
 
 	@Override
@@ -67,7 +73,7 @@ public class RateLimitWebFilter implements WebFilter {
 					if (decision.isEmpty()) {
 						return Mono.empty();
 					}
-					return applyDecision(exchange, chain, decision.get());
+					return applyDecision(exchange, chain, policy, decision.get());
 				});
 	}
 
@@ -78,6 +84,7 @@ public class RateLimitWebFilter implements WebFilter {
 		if (policy.failClosed()) {
 			LOG.error("redis rate limiter failed; fail-closed policy={}", policy.id(), error);
 			exchange.getAttributes().put(GatewayAttributes.RATE_LIMIT_DECISION, "unavailable");
+			meters.rateLimit(policy.id(), GatewayMeters.DECISION_FAIL_CLOSED);
 			return problemWriter.write(
 							exchange,
 							GatewayErrorCode.RATE_LIMITER_UNAVAILABLE,
@@ -86,22 +93,26 @@ public class RateLimitWebFilter implements WebFilter {
 		}
 		LOG.warn("redis rate limiter failed; fail-open policy={}", policy.id(), error);
 		exchange.getAttributes().put(GatewayAttributes.RATE_LIMIT_DECISION, "degraded-allow");
+		meters.rateLimit(policy.id(), GatewayMeters.DECISION_FAIL_OPEN);
 		return Mono.just(Optional.of(RateLimitDecision.allow(policy.burstCapacity(), policy)));
 	}
 
 	private Mono<Void> applyDecision(
 			ServerWebExchange exchange,
 			WebFilterChain chain,
+			RateLimitPolicy policy,
 			RateLimitDecision decision) {
 		headers(exchange, decision);
 		if (!decision.allowed()) {
 			exchange.getAttributes().put(GatewayAttributes.RATE_LIMIT_DECISION, "exceeded");
+			meters.rateLimit(policy.id(), GatewayMeters.DECISION_EXCEEDED);
 			return problemWriter.write(
 					exchange,
 					GatewayErrorCode.RATE_LIMIT_EXCEEDED,
 					HttpStatus.TOO_MANY_REQUESTS);
 		}
 		exchange.getAttributes().put(GatewayAttributes.RATE_LIMIT_DECISION, "allowed");
+		meters.rateLimit(policy.id(), GatewayMeters.DECISION_ALLOWED);
 		return chain.filter(exchange);
 	}
 

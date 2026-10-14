@@ -14,6 +14,10 @@ spring:
           discovery:
             locator:
               enabled: false
+          metrics:
+            enabled: true
+            path-tags:
+              enabled: false
       httpclient:
         connect-timeout: 3000
         response-timeout: 6s
@@ -50,13 +54,24 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include:
+          - health
+          - prometheus
   endpoint:
     health:
       probes:
         enabled: true
       show-details: never
       show-components: never
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+        "[spring.cloud.gateway.requests]": true
 
 resilience4j:
   circuitbreaker:

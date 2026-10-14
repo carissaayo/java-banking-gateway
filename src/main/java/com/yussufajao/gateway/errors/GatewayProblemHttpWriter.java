@@ -2,6 +2,7 @@ package com.yussufajao.gateway.errors;
 
 import com.yussufajao.gateway.correlation.CorrelationId;
 import com.yussufajao.gateway.correlation.GatewayAttributes;
+import com.yussufajao.gateway.observability.GatewayMeters;
 import com.yussufajao.gateway.routing.GatewayHeaders;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
@@ -17,13 +18,16 @@ import tools.jackson.databind.json.JsonMapper;
 public class GatewayProblemHttpWriter {
     private final GatewayProblemMapper mapper;
     private final JsonMapper jsonMapper;
+    private final GatewayMeters meters;
 
-    public GatewayProblemHttpWriter(GatewayProblemMapper mapper, JsonMapper jsonMapper){
+    public GatewayProblemHttpWriter(GatewayProblemMapper mapper, JsonMapper jsonMapper, GatewayMeters meters){
         this.mapper = mapper;
         this.jsonMapper = jsonMapper;
+        this.meters = meters;
     }
 
     public Mono<Void> write(ServerWebExchange exchange, GatewayErrorCode code, HttpStatus status){
+        meters.policyRejection(code);
         String correlationId = correlationId(exchange);
         String instance = exchange.getRequest().getURI().getRawPath();
         GatewayProblem problem = mapper.of(code, instance, correlationId);
