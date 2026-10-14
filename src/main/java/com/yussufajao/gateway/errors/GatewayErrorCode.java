@@ -25,9 +25,13 @@ public enum GatewayErrorCode {
 		"The upstream circuit breaker is open."),
 	MISSING_IDEMPOTENCY_KEY("missing-idempotency-key", "Missing idempotency key", 400,
 		"This write requires an Idempotency-Key header."),
-		REQUEST_TOO_LARGE("request-too-large", "Request too large", 413,
-		"The request body exceeds the allowed size.");
-	
+	REQUEST_TOO_LARGE("request-too-large", "Request too large", 413,
+		"The request body exceeds the allowed size."),
+	UNSUPPORTED_MEDIA_TYPE("unsupported-media-type", "Unsupported media type", 415,
+		"This write accepts application/json only."),
+	INVALID_REQUEST_ENVELOPE("invalid-request-envelope", "Invalid request envelope", 400,
+		"The request headers are not a valid HTTP message.");
+		
 
 	private static final String TYPE_BASE = "https://errors.example.test/";
 

@@ -50,12 +50,12 @@ public class SecurityConfig {
 				.headers( headers -> headers
 					.contentTypeOptions(Customizer.withDefaults())
 					.frameOptions(frame -> frame.mode(Mode.DENY))
-					.ReferrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
+					.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
 					.contentSecurityPolicy(csp -> csp.policyDirectives(
-						"default-src 'none'; frame-ancestors 'none'; base-uri 'none"))
-					.permissionsPolicyHeader(policy -> policy.policy(
+						"default-src 'none'; frame-ancestors 'none'; base-uri 'none'"))
+					.permissionsPolicy(policy -> policy.policy(
 						"camera=(), microphone=(), geolocation=()"))
-					.hsts(hsts.disable()))
+					.hsts(hsts -> hsts.disable()))
 				.cors(spec -> spec.configurationSource(exchange ->{
 					if(cors.allowedOrigins().isEmpty()){
 						return null;
