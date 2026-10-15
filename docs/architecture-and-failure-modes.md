@@ -14,8 +14,8 @@ Client  ->  Gateway (JWT, scope, quota, size, CORS, correlation)
 | --- | --- | --- |
 | Bad/missing JWT, wrong audience | 401 `invalid-credentials` | Downstream never sees the call |
 | Wrong scope | 403 `insufficient-scope` | Not a 404 |
-| Redis down on a write quota | 503 fail-closed | Not “let the transfer through” |
-| Redis down on a documented read quota | fail-open, decision logged | Not silent |
+| Redis down on a write quota | 503 fail-closed (Redis consume bounded to 1s) | Not “let the transfer through”, not hang until the client times out |
+| Redis down on a documented read quota | fail-open, decision logged (same 1s bound) | Not silent |
 | Upstream slower than the route timeout | 504 `upstream-timeout` | GET retry on **connection reset** is tested; a slow stub may be cut by the circuit TimeLimiter first. POST/PATCH not retried |
 | Nobody listening | 503 `upstream-unavailable` | Host/port must not appear in `detail` |
 | Too many upstream 5xx | 503 `circuit-open` | Customer routes use a **different** breaker |

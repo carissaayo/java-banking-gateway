@@ -1,10 +1,14 @@
 package com.yussufajao.gateway.ratelimit;
 
+import io.lettuce.core.ClientOptions;
+import io.lettuce.core.TimeoutOptions;
+import java.time.Duration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
@@ -17,7 +21,14 @@ public class GatewayRedisConfiguration {
         var uri = redis.uri();
         int port = uri.getPort() == -1 ? 6379 :uri.getPort();
         var standalone = new RedisStandaloneConfiguration(uri.getHost(), port);
-        var factory = new LettuceConnectionFactory(standalone);
+        var clientConfig = LettuceClientConfiguration.builder()
+                .commandTimeout(Duration.ofSeconds(1))
+                .clientOptions(ClientOptions.builder()
+                        .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
+                        .timeoutOptions(TimeoutOptions.enabled(Duration.ofSeconds(1)))
+                        .build())
+                .build();
+        var factory = new LettuceConnectionFactory(standalone, clientConfig);
         factory.afterPropertiesSet();
         return factory;
     }

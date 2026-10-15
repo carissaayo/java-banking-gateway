@@ -26,9 +26,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import java.time.Duration;
 import java.util.UUID;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -107,13 +109,24 @@ class GatewayRateLimitIT {
 
 	@Test
 	@Order(3)
+	@DirtiesContext
 	void redisDownFailClosedOnTransfersFailOpenOnReads() {
 		Assumptions.assumeTrue(REDIS != null && REDIS.isRunning(), "Docker Redis is required to stop the limiter");
 		String write = TestJwtTokens.bearerFor("customer-app", "user-down-write", TRANSFER_SCOPE);
 		String read = TestJwtTokens.bearerFor("service-app", "user-down-read", TXN_SCOPE);
 		REDIS.stop();
-		postTransfer(write).expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
-		webTestClient.get()
+		WebTestClient client = webTestClient.mutate()
+				.responseTimeout(Duration.ofSeconds(8))
+				.build();
+		client.post()
+				.uri("/api/ledger/transfers")
+				.header(HttpHeaders.AUTHORIZATION, write)
+				.header("Idempotency-Key", "it-redis-down")
+				.contentType(MediaType.APPLICATION_JSON)
+				.bodyValue("{}")
+				.exchange()
+				.expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+		client.get()
 				.uri("/api/transactions/txn-1")
 				.header(HttpHeaders.AUTHORIZATION, read)
 				.exchange()

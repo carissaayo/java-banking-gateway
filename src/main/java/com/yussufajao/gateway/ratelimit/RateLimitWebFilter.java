@@ -6,6 +6,7 @@ import com.yussufajao.gateway.errors.GatewayErrorCode;
 import com.yussufajao.gateway.errors.GatewayProblemHttpWriter;
 import com.yussufajao.gateway.observability.GatewayMeters;
 import com.yussufajao.gateway.routing.GatewayHeaders;
+import java.time.Duration;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,7 @@ public class RateLimitWebFilter implements WebFilter {
 				AuthenticatedClient.clientId(authentication),
 				AuthenticatedClient.subject(authentication));
 		return rateLimiter.consume(key, policy)
+				.timeout(Duration.ofSeconds(1))
 				.map(Optional::of)
 				.onErrorResume(error -> recoverFromRedis(exchange, policy, error))
 				.flatMap(decision -> {

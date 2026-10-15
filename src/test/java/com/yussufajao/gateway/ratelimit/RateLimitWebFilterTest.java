@@ -11,6 +11,7 @@ import com.yussufajao.gateway.errors.GatewayErrorCode;
 import com.yussufajao.gateway.errors.GatewayProblemHttpWriter;
 import com.yussufajao.gateway.observability.GatewayMeters;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,26 @@ class RateLimitWebFilterTest {
 		filter.filter(exchange, ex -> Mono.empty())
 				.contextWrite(ReactiveSecurityContextHolder.withAuthentication(jwtAuth()))
 				.block();
+		verify(writer).write(
+				eq(exchange),
+				eq(GatewayErrorCode.RATE_LIMITER_UNAVAILABLE),
+				eq(HttpStatus.SERVICE_UNAVAILABLE));
+		assertThat(registry.counter(
+				"gateway.rate_limit",
+				"policy", "ledger-transfers-write",
+				"decision", GatewayMeters.DECISION_FAIL_CLOSED).count()).isEqualTo(1.0);
+	}
+
+	@Test
+	void redisHangFailClosedWrites503WithinBound() {
+		RateLimiter limiter = (key, policy) -> Mono.never();
+		GatewayProblemHttpWriter writer = mockWriter();
+		var registry = new SimpleMeterRegistry();
+		var filter = new RateLimitWebFilter(limiter, writer, new GatewayMeters(registry));
+		var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/api/ledger/transfers"));
+		filter.filter(exchange, ex -> Mono.empty())
+				.contextWrite(ReactiveSecurityContextHolder.withAuthentication(jwtAuth()))
+				.block(Duration.ofSeconds(3));
 		verify(writer).write(
 				eq(exchange),
 				eq(GatewayErrorCode.RATE_LIMITER_UNAVAILABLE),
