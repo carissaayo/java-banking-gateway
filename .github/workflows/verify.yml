@@ -20,7 +20,7 @@ jobs:
       - name: Docker image
         run: docker build -t banking-api-gateway:ci .
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: banking-api-gateway:ci
           format: table
