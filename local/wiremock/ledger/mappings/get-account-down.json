@@ -1,0 +1,16 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/accounts/acc-down"
+  },
+  "response": {
+    "status": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "error": "down"
+    }
+  }
+}

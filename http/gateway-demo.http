@@ -1,0 +1,52 @@
+@gateway = http://localhost:8080
+@keycloak = http://127.0.0.1:8180
+@customerSecret = local-demo-customer-secret
+@otherSecret = local-demo-other-secret
+
+### Token — customer (accounts read + transfers write)
+# @name customerToken
+POST {{keycloak}}/realms/banking/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=customer-app&client_secret={{customerSecret}}&scope=ledger.accounts.read ledger.transfers.write
+
+### Health is public
+GET {{gateway}}/actuator/health
+
+### Account read
+GET {{gateway}}/api/ledger/accounts/acc-demo
+Authorization: Bearer {{customerToken.response.body.access_token}}
+
+### Missing token
+GET {{gateway}}/api/ledger/accounts/acc-demo
+
+### Wrong audience
+# @name otherToken
+POST {{keycloak}}/realms/banking/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=other-api-app&client_secret={{otherSecret}}&scope=ledger.accounts.read
+
+###
+GET {{gateway}}/api/ledger/accounts/acc-demo
+Authorization: Bearer {{otherToken.response.body.access_token}}
+
+### Transfer write (repeat to see 429)
+POST {{gateway}}/api/ledger/transfers
+Authorization: Bearer {{customerToken.response.body.access_token}}
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{}
+
+### Slow GET (504; connection-reset retry is GatewayRetryIT)
+GET {{gateway}}/api/ledger/accounts/acc-slow
+Authorization: Bearer {{customerToken.response.body.access_token}}
+
+### Circuit feed (repeat ~8 times, then 503)
+GET {{gateway}}/api/ledger/accounts/acc-down
+Authorization: Bearer {{customerToken.response.body.access_token}}
+
+### Prometheus
+GET {{gateway}}/actuator/prometheus
+Authorization: Bearer {{customerToken.response.body.access_token}}

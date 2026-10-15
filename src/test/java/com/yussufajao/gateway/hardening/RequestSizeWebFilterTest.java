@@ -34,7 +34,7 @@ class RequestSizeWebFilterTest {
 		verify(writer).write(
 				eq(exchange),
 				eq(GatewayErrorCode.REQUEST_TOO_LARGE),
-				eq(HttpStatus.CONTENT_TOO_LARGE));
+				eq(HttpStatus.PAYLOAD_TOO_LARGE));
 		verify(chain, never()).filter(any());
 	}
 }

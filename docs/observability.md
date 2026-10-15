@@ -9,7 +9,7 @@ W3C `traceparent` and `tracestate` are already accepted, sanitized, and forwarde
 ## Scrape (local)
 
 ```bash
-curl.exe -s http://127.0.0.1:8080/actuator/prometheus ^
+curl.exe -s http://localhost:8080/actuator/prometheus ^
   -H "Authorization: Bearer %TOKEN%"
 ```
 
@@ -29,7 +29,7 @@ Expect `401` without a token. Expect Prometheus text with `jvm_memory_used_bytes
 | `resilience4j_circuitbreaker_*` | `name` = `ledger` / `customer` / `operations` | Breaker state and rejected calls |
 | `reactor_netty_*` | connection pool / event loop | Saturation |
 
-Retry attempts are **not** a separate counter. Spring Cloud Gateway retries GET/HEAD only; extra upstream calls show up in duration and upstream failure series. Transfer POST is never retried.
+Retry attempts are **not** a separate counter. GET/HEAD may retry on **connection reset** (`GatewayRetryIT`). A slow stub can be cut by the circuit TimeLimiter first, so compose `acc-slow` may show one upstream hit. Transfer POST is never retried.
 
 ## PromQL
 
@@ -89,4 +89,4 @@ Import `docs/grafana/gateway-dashboard.json` into Grafana with a Prometheus data
 | AuthFailureSpike | `sum(rate(gateway_auth_failures_total[5m])) > 1` | 10m | Bad tokens or a scrape/scanner |
 | UpstreamTimeouts | `sum(rate(gateway_upstream_failures_total{code="upstream-timeout"}[5m])) > 0.1` | 5m | Ledger/customer too slow |
 
-Tune thresholds after Phase 9 load tests. Do not alert on a single 401 from `/actuator/prometheus` without a token.
+Phase 9 wall-clock numbers are in [phase-9-load.md](phase-9-load.md); they are not Prometheus SLOs. Read p99 from the Grafana dashboard after scraping `/actuator/prometheus`. Do not alert on a single 401 from `/actuator/prometheus` without a token.

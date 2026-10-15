@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.ConnectException;
 import org.junit.jupiter.api.Test;
+import org.springframework.cloud.gateway.support.ServiceUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -37,5 +38,17 @@ class GatewayProblemMapperTest {
 		assertThat(problem.detail()).doesNotContain("127.0.0.1");
 		assertThat(problem.detail()).doesNotContain("localhost");
 		assertThat(problem.detail()).doesNotContain("Connection refused");
+	}
+
+	@Test
+	void mapsOpenCircuitWithoutSpringExceptionType() {
+		GatewayProblem problem = mapper.toProblem(
+				new ServiceUnavailableException("circuit"),
+				"/api/ledger/accounts/acc-down",
+				"corr-1234");
+
+		assertThat(problem.status()).isEqualTo(503);
+		assertThat(problem.type()).isEqualTo("https://errors.example.test/circuit-open");
+		assertThat(problem.detail()).doesNotContain("ServiceUnavailableException");
 	}
 }

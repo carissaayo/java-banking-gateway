@@ -4,6 +4,16 @@ A reactive API gateway for banking-style services, built with Java and Spring Cl
 
 The project focuses on edge security, traffic policy, resilience, auditability, and observability. It is not a replacement for authorization and correctness checks inside downstream services.
 
+Clone and run:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+bash scripts/demo.sh
+```
+
+`./mvnw verify` is the automated suite (in-process JWTs, no Keycloak). CI runs verify, builds the image, and scans it with Trivy (fixable CRITICAL).
+
 ## 1. Learning and portfolio goals
 
 Demonstrate:
@@ -567,6 +577,8 @@ Exit criterion: latency, errors, saturation, and policy rejections are visible.
 
 Exit criterion: measured limits and degraded behaviors are documented.
 
+How: concurrent ITs in `src/test/java/com/yussufajao/gateway/GatewayConcurrent*IT.java` and `GatewayGracefulShutdownIT.java`. Numbers: [docs/phase-9-load.md](docs/phase-9-load.md).
+
 ### Phase 10: Delivery
 
 - Add Maven verification and formatting.
@@ -577,6 +589,8 @@ Exit criterion: measured limits and degraded behaviors are documented.
 - Record an architecture and failure-mode walkthrough.
 
 Exit criterion: a reviewer can exercise authentication, throttling, failure, and recovery locally.
+
+How: `cp .env.example .env`, `docker compose up -d --build`, `bash scripts/demo.sh`. Details in [docs/local-setup.md](docs/local-setup.md) and [docs/architecture-and-failure-modes.md](docs/architecture-and-failure-modes.md). `./mvnw verify` then CI builds the image.
 
 ## 19. Testing strategy
 
@@ -595,7 +609,7 @@ Exit criterion: a reviewer can exercise authentication, throttling, failure, and
 - Valid token, expired token, wrong issuer, and wrong audience
 - Missing and insufficient scopes
 - Correlation generation and propagation
-- Redis rate limiting across identities and routes
+- Redis rate limiting across identities, routes, and two gateway instances
 - Redis failure behavior
 - Upstream timeout
 - Circuit opening and recovery
@@ -646,23 +660,23 @@ Avoid high-cardinality IDs in metric labels.
 
 ## 21. Security checklist
 
-- [ ] TLS required in production documentation
-- [ ] JWT issuer, audience, algorithm, and expiry validated
-- [ ] Routes deny by default
-- [ ] Required scopes documented per route
-- [ ] CORS uses explicit allowlists
-- [ ] Trusted proxy configuration is explicit
-- [ ] Request size and header limits are set
-- [ ] Authorization headers and cookies never enter logs
-- [ ] Sensitive routes have an explicit Redis failure policy
-- [ ] Financial writes are not blindly retried
-- [ ] Management endpoints are restricted
-- [ ] Secrets are externalized
-- [ ] Dependencies and container images are scanned
+- [x] TLS required in production documentation
+- [x] JWT issuer, audience, algorithm, and expiry validated
+- [x] Routes deny by default
+- [x] Required scopes documented per route
+- [x] CORS uses explicit allowlists
+- [x] Trusted proxy configuration is explicit
+- [x] Request size and header limits are set
+- [x] Authorization headers and cookies never enter logs
+- [x] Sensitive routes have an explicit Redis failure policy
+- [x] Financial writes are not blindly retried
+- [x] Management endpoints are restricted
+- [x] Secrets are externalized
+- [x] Dependencies and container images are scanned
 
 ## 22. Local demonstration
 
-The finished project should make it possible to:
+`bash scripts/demo.sh` after `docker compose up -d --build`. Collection: `http/gateway-demo.http`.
 
 1. Start Redis, Keycloak, gateway, and mock upstreams.
 2. Obtain customer and operations tokens.
@@ -673,26 +687,26 @@ The finished project should make it possible to:
 7. Slow an upstream and receive a bounded timeout.
 8. Fail an upstream until the circuit opens.
 9. Recover the upstream and observe half-open to closed.
-10. Show that a safe read may retry but a transfer write does not.
+10. Show a bounded timeout; a transfer write is not retried. GET retry on connection reset is `GatewayRetryIT`.
 11. Trace one correlation ID through gateway and upstream logs.
 12. View Prometheus metrics.
 
 ## 23. Completion checklist
 
-- [ ] Static route catalog is documented and tested
-- [ ] JWT issuer, audience, and scopes are validated
-- [ ] Routes deny by default
-- [ ] Correlation and trace context propagate downstream
-- [ ] Distributed Redis rate limiting works across instances
-- [ ] Redis failure behavior is explicit per route
-- [ ] Timeouts and circuit breakers bound upstream failure
-- [ ] Retry policy distinguishes safe and financial operations
-- [ ] Request and header limits are enforced
-- [ ] Access logs exclude sensitive data
-- [ ] Metrics expose traffic, errors, latency, and policy decisions
-- [ ] WireMock and Testcontainers cover failure paths
-- [ ] Graceful shutdown drains active requests
-- [ ] CI and local demonstration are reproducible
+- [x] Static route catalog is documented and tested
+- [x] JWT issuer, audience, and scopes are validated
+- [x] Routes deny by default
+- [x] Correlation and trace context propagate downstream
+- [x] Distributed Redis rate limiting works across instances
+- [x] Redis failure behavior is explicit per route
+- [x] Timeouts and circuit breakers bound upstream failure
+- [x] Retry policy distinguishes safe and financial operations
+- [x] Request and header limits are enforced
+- [x] Access logs exclude sensitive data
+- [x] Metrics expose traffic, errors, latency, and policy decisions
+- [x] WireMock and Testcontainers cover failure paths
+- [x] Graceful shutdown drains active requests
+- [x] CI and local demonstration are reproducible
 
 ## 24. Interview talking points
 

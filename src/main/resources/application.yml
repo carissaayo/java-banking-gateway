@@ -33,6 +33,7 @@ gateway:
   security:
     issuer-uri: ${GATEWAY_SECURITY_ISSUER_URI}
     audience: ${GATEWAY_SECURITY_AUDIENCE}
+    jwk-set-uri: ${GATEWAY_SECURITY_JWK_SET_URI:}
   redis:
     uri: ${GATEWAY_REDIS_URI}
   cors:

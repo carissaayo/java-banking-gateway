@@ -10,13 +10,20 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "gateway.security")
 public record GatewaySecurityProperties(
 		@NotNull URI issuerUri,
-		@NotBlank String audience
+		@NotBlank String audience,
+		String jwkSetUri
 ) {
 
 	public GatewaySecurityProperties {
 		requireHttpUri("gateway.security.issuer-uri", issuerUri);
 		if (audience.isBlank()) {
 			throw new IllegalArgumentException("gateway.security.audience must be set");
+		}
+		if (jwkSetUri != null && jwkSetUri.isBlank()) {
+			jwkSetUri = null;
+		}
+		if (jwkSetUri != null) {
+			requireHttpUri("gateway.security.jwk-set-uri", URI.create(jwkSetUri));
 		}
 	}
 

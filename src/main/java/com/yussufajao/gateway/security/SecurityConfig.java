@@ -104,14 +104,23 @@ public class SecurityConfig {
 	ReactiveJwtDecoder jwtDecoder(GatewaySecurityProperties security) {
 		return new SupplierReactiveJwtDecoder(() -> {
 			String issuer = security.issuerUri().toString();
-			NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withIssuerLocation(issuer)
-					.jwsAlgorithm(SignatureAlgorithm.RS256)
-					.build();
+			NimbusReactiveJwtDecoder decoder = decoderFor(security, issuer);
 			OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(
 					JwtValidators.createDefaultWithIssuer(issuer),
 					new JwtAudienceValidator(security.audience()));
 			decoder.setJwtValidator(validator);
 			return decoder;
 		});
+	}
+
+	private static NimbusReactiveJwtDecoder decoderFor(GatewaySecurityProperties security, String issuer) {
+		if (security.jwkSetUri() != null) {
+			return NimbusReactiveJwtDecoder.withJwkSetUri(security.jwkSetUri())
+					.jwsAlgorithm(SignatureAlgorithm.RS256)
+					.build();
+		}
+		return NimbusReactiveJwtDecoder.withIssuerLocation(issuer)
+				.jwsAlgorithm(SignatureAlgorithm.RS256)
+				.build();
 	}
 }

@@ -1,6 +1,6 @@
 # Phase 3 — OAuth2 / JWT security
 
-Implementation contract. You write the code. This file is the checklist and the decisions. Phase 0 already chose the clients, claims, and scopes. Do not invent a second catalog.
+**Implemented.** This was the Phase 3 contract. The code matches §7 and [ADR 0004](adr/0004-jwt-resource-server.md). Rate limits, timeouts, and delivery (Phases 4–10) came later; they are not missing work.
 
 **Exit criterion:** business routes deny by default. They accept only a valid JWT for the configured issuer and audience, with the scope required for that method and path. Health stays public. Tokens in query strings are rejected. Error bodies stay RFC 9457 and still never include `getMessage()`.
 
@@ -13,7 +13,7 @@ It is still not business authorization. `ledger.transfers.write` means “this t
 ## 2. What you must not do
 
 - Do not call Keycloak (token introspection) on every request. Use JWKS + signature. Introspection is a later extension for opaque tokens.
-- Do not silently default issuer, audience, or JWK set URI. Missing values fail boot. `application-local.yml` may set local Keycloak URLs because that profile is an explicit choice.
+- Do not silently default issuer or audience. Missing values fail boot. `application-local.yml` may set local Keycloak URLs because that profile is an explicit choice. `gateway.security.jwk-set-uri` is **optional**: blank means issuer JWKS discovery. Compose sets `GATEWAY_SECURITY_JWK_SET_URI` so the container can fetch certs from `keycloak:8080` while `iss` stays `http://127.0.0.1:8180/realms/banking`.
 - Do not accept HMAC (`HS256`) or `alg: none`. Allow RS256. ES256 is optional if you add it to the allow-list and the realm actually signs with it.
 - Do not read tokens from query parameters (`?access_token=`). `Authorization: Bearer` only.
 - Do not log `Authorization`, cookies, raw tokens, or token payloads.
@@ -27,8 +27,9 @@ Bind these. No placeholders that resolve to empty strings.
 
 | Property | Env | Meaning |
 | --- | --- | --- |
-| `gateway.security.issuer-uri` | `GATEWAY_SECURITY_ISSUER_URI` | Exact `iss` claim. Also used to discover JWKS (`{issuer}/protocol/openid-connect/certs` on Keycloak). |
-| `gateway.security.audience` | `GATEWAY_SECURITY_AUDIENCE` | Exact `aud` value the gateway accepts. Prefer a single API audience, e.g. `banking-gateway`. |
+| `gateway.security.issuer-uri` | `GATEWAY_SECURITY_ISSUER_URI` | Exact `iss` claim. Used to discover JWKS when `jwk-set-uri` is blank. |
+| `gateway.security.audience` | `GATEWAY_SECURITY_AUDIENCE` | Exact `aud` value the gateway accepts (`banking-gateway`). |
+| `gateway.security.jwk-set-uri` | `GATEWAY_SECURITY_JWK_SET_URI` | Optional. Blank → issuer discovery. Compose-only: Keycloak certs URL on the Docker network. |
 
 Validate at bind time:
 
@@ -47,7 +48,7 @@ gateway:
 
 Spring Security still needs the resource-server JWT settings. Point them at the same issuer so there is one source of truth. Do not keep a second, different issuer in `spring.security.oauth2.resourceserver.jwt`.
 
-Readiness (Phase 0 / §17): once security is on, readiness should go down if signing keys cannot be loaded. Liveness must not depend on Keycloak.
+Liveness must not depend on Keycloak. Readiness does **not** probe JWKS in this repo (`SupplierReactiveJwtDecoder` loads keys on first use). README §17 still lists “signing keys available” as a production goal, not a demo probe.
 
 ## 4. Dependencies
 
@@ -141,7 +142,7 @@ Do this before JWT decoding if you can.
 
 ## 9. Local Keycloak
 
-Add a Keycloak service to `docker-compose.yml`. Suggested host port **8180** so it does not collide with the gateway (8080 / 8088), `httpd` on 8080, or WireMock 8081/8082.
+Keycloak is in `docker-compose.yml` on host port **8180** so it does not collide with the gateway (8080) or WireMock (8081/8082).
 
 Import a realm file from the repo, for example `local/keycloak/banking-realm.json`.
 
@@ -161,6 +162,7 @@ Clients (public client secrets in this file are **local demo only**, never produ
 | `customer-app` | authorization code or resource-owner/password **only if** you need a clickable local demo; client credentials plus a user token is enough if you document how to get one | `ledger.accounts.read`, `ledger.transfers.read`, `ledger.transfers.write`, `transactions.read`, `customers.read`, `customers.write` |
 | `operations-app` | same | `operations.read`, `operations.admin`, plus any read scopes ops actually need |
 | `service-app` | **client credentials only** | a tight subset, e.g. `transactions.read`, `ledger.accounts.read` — not `operations.admin` |
+| `other-api-app` | client credentials | same scopes as a customer read, but `aud=other-api` (wrong-audience demo) |
 
 Export the realm from Keycloak after you have it working, sanitize it (no real passwords, no external URLs), and commit that. Operators recreate the demo with `docker compose up`.
 
@@ -172,10 +174,10 @@ Keep packages small. Something like:
 
 ```text
 security/
-  GatewaySecurityProperties.java      # issuer + audience, validated
-  SecurityConfiguration.java          # SecurityWebFilterChain
+  GatewaySecurityProperties.java      # issuer + audience; optional jwk-set-uri
+  SecurityConfig.java                 # SecurityWebFilterChain
   JwtAudienceValidator.java           # OAuth2TokenValidator<Jwt>
-  RouteScopeAuthorizationManager.java # or equivalent filter; the table in §7
+  RouteScopeAuthorizationManager.java # §7 table
   BearerTokenQueryRejector.java       # WebFilter, high precedence
 ```
 
@@ -228,20 +230,18 @@ After Keycloak is up:
 
 ## 13. Done when
 
-- [ ] Issuer and audience required at boot; `local` profile points at Keycloak
-- [ ] JWKS validation, not introspection
-- [ ] RS256 (or documented allow-list); `none` and HMAC rejected
-- [ ] Query-string tokens rejected
-- [ ] Scope table in §7 enforced; default deny
-- [ ] 401 / 403 are Phase 2 problem details
-- [ ] Health probes remain unauthenticated
-- [ ] Access logs can show `client_id` / `sub`, never the token
-- [ ] Realm file is sanitized and compose-imported
-- [ ] `./mvnw test` covers the table in §11 without a live Keycloak
-- [ ] You can demonstrate the four local-demo steps
+- [x] Issuer and audience required at boot; `local` profile points at Keycloak
+- [x] JWKS validation, not introspection
+- [x] RS256 (or documented allow-list); `none` and HMAC rejected
+- [x] Query-string tokens rejected
+- [x] Scope table in §7 enforced; default deny
+- [x] 401 / 403 are Phase 2 problem details
+- [x] Health probes remain unauthenticated
+- [x] Access logs can show `client_id` / `sub`, never the token
+- [x] Realm file is sanitized and compose-imported
+- [x] `./mvnw test` covers the table in §11 without a live Keycloak
+- [x] You can demonstrate the four local-demo steps
 
 ## 14. Out of scope (do not sneak in)
 
-Partner API keys, mTLS, opaque-token introspection, Redis rate limits, timeouts, circuit breakers. Those are later phases.
-
-When the code is ready, ask for a review against this file and the §11 table.
+Partner API keys, mTLS, and opaque-token introspection stay out. Redis, timeouts, and circuit breakers were later phases and are implemented.

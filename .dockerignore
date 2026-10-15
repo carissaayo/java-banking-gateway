@@ -1,0 +1,16 @@
+.git
+.github
+.idea
+.vscode
+.env
+target
+*.iml
+*.log
+docs
+http
+scripts
+local
+README.md
+.dockerignore
+Dockerfile
+docker-compose.yml

@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.util.concurrent.TimeoutException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.springframework.cloud.gateway.filter.factory.SpringCloudCircuitBreakerFilterFactory;
+import org.springframework.cloud.gateway.support.ServiceUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -80,7 +81,9 @@ public class GatewayProblemMapper {
 
 	private static boolean isCircuitOpen(Throwable error){
 		return error instanceof CallNotPermittedException
-			|| hasCause(error, CallNotPermittedException.class);
+			|| error instanceof ServiceUnavailableException
+			|| hasCause(error, CallNotPermittedException.class)
+			|| hasCause(error, ServiceUnavailableException.class);
 	}
 
 	private static boolean isUpstreamHttpFailure(Throwable error) {
