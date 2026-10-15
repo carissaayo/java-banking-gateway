@@ -16,7 +16,7 @@ jobs:
           java-version: "21"
           cache: maven
       - name: Maven verify
-        run: ./mvnw -B verify
+        run: chmod +x mvnw && ./mvnw -B verify
       - name: Docker image
         run: docker build -t banking-api-gateway:ci .
       - name: Scan image
